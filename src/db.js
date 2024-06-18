@@ -2,7 +2,7 @@ require("dotenv").config();
 const { Sequelize } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
-const { DB_USER, DB_PASSWORD, DB_HOST, DB_URL, DB_PORT } = process.env;
+const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = process.env;
 
 // crear una instancia de conexión a una base de datos PostgreSQL
 // const sequelize = new Sequelize(
@@ -13,14 +13,12 @@ const { DB_USER, DB_PASSWORD, DB_HOST, DB_URL, DB_PORT } = process.env;
 //   }
 // );
 
-// Conectar con la DB remota (Railway)
-const sequelize = new Sequelize(
-  `postgresql://postgres:${DB_USER}@${DB_URL}:${DB_PORT}/railway`,
-  {
-    logging: false, // set to console.log to see the raw SQL queries
-    native: false, // lets Sequelize know we can use pg-native for ~30% more speed
-  }
-);
+
+// Conectar con la base de datos de Railway
+const sequelize = new Sequelize(`postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`, {
+  logging: false, // Establecer en console.log para ver las consultas SQL sin procesar
+  native: false, // Permite que Sequelize sepa que puede usar pg-native para obtener un ~30% más de velocidad
+});
 
 // Función para cargar y definir los modelos
 function defineModels() {
