@@ -5,11 +5,20 @@ const path = require("path");
 const { DB_USER, DB_PASSWORD, DB_HOST } = process.env;
 
 // crear una instancia de conexión a una base de datos PostgreSQL
+// const sequelize = new Sequelize(
+//   `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/saber365`,
+//   {
+//     logging: false,
+//     native: false,
+//   }
+// );
+
+// Conectar con la DB remota (Railway)
 const sequelize = new Sequelize(
-  `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/saber365`,
+  `postgresql://postgres:${DB_USER}@${DB_URL}:${DB_PORT}/railway`,
   {
-    logging: false,
-    native: false,
+    logging: false, // set to console.log to see the raw SQL queries
+    native: false, // lets Sequelize know we can use pg-native for ~30% more speed
   }
 );
 
