@@ -22,8 +22,7 @@ module.exports = (sequelize) => {
         trim: true,
       },
       grado: {
-        type: DataTypes.ENUM,
-        values: ["SÉPTIMO", "NOVENO", "UNDÉCIMO"],
+        type: DataTypes.STRING,
         allowNull: false,
         trim: true,
       },

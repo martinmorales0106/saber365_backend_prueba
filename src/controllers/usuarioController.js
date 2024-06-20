@@ -1,6 +1,5 @@
 const { Usuario } = require("../db");
 const { Op } = require("sequelize");
-const bcrypt = require("bcrypt");
 const { emailRegistro, emailOlvidePassword } = require("../helpers/email");
 const generarId = require("../helpers/generarId");
 const generarJWT = require("../helpers/generarJWT");
@@ -13,22 +12,43 @@ const registrar = async (req, res) => {
       colegio,
     } = req.body;
 
-    // Verificar si ya existe un usuario con el mismo nombre de usuario
-    const existeUsuario = await Usuario.findOne({ where: { nombreUsuario } });
+    
+    // Verificar si ya existe un usuario con el mismo nombre de usuario, incluidos los eliminados
+    const existeUsuario = await Usuario.findOne({
+      where: { nombreUsuario },
+      paranoid: false, // Incluir usuarios eliminados
+    });
+
     if (existeUsuario) {
-      return res.status(400).json({
-        msg: "Nombre de usuario ya registrado. Por favor, elige otro nombre de usuario.",
-      });
+      if (existeUsuario.deletedAt) {
+        return res.status(400).json({
+          msg: `Nombre de usuario ya registrado pero fue eliminado el ${existeUsuario.deletedAt}. Por favor, contacta al administrador para más detalles.`,
+        });
+      } else {
+        return res.status(400).json({
+          msg: "Nombre de usuario ya registrado. Por favor, elige otro nombre de usuario.",
+        });
+      }
     }
 
-    // Verificar si ya existe un email con el mismo correo electrónico
-    const existeEmail = await Usuario.findOne({ where: { email } });
+
+    // Verificar si ya existe un email con el mismo correo electrónico, incluidos los eliminados
+    const existeEmail = await Usuario.findOne({
+      where: { email },
+      paranoid: false, // Incluir usuarios eliminados
+    });
+
     if (existeEmail) {
-      return res.status(400).json({
-        msg: "Correo electrónico ya registrado. Por favor, utiliza otro correo electrónico.",
-      });
+      if (existeEmail.deletedAt) {
+        return res.status(400).json({
+          msg: `Correo electrónico ya registrado pero fue eliminado el ${existeEmail.deletedAt}. Por favor, contacta al administrador para más detalles.`,
+        });
+      } else {
+        return res.status(400).json({
+          msg: "Correo electrónico ya registrado. Por favor, utiliza otro correo electrónico.",
+        });
+      }
     }
-
 
     // Crear un nuevo usuario con los datos del cuerpo de la solicitud
     const nuevoUsuario = await Usuario.create(req.body);

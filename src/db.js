@@ -42,12 +42,13 @@ function defineModels() {
 // Llamamos a la función para definir los modelos
 defineModels();
 
-const { Usuario } = sequelize.models;
+const { Usuario, Simulacro } = sequelize.models;
 
 // Relaciones entre modelos
 
 
 module.exports = {
   Usuario,
+  Simulacro,
   conn: sequelize,
 };
