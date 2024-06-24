@@ -42,13 +42,25 @@ function defineModels() {
 // Llamamos a la función para definir los modelos
 defineModels();
 
-const { Usuario, Simulacro } = sequelize.models;
+const { Usuario, Simulacro, Pregunta } = sequelize.models;
 
 // Relaciones entre modelos
 
+Simulacro.hasMany(Pregunta, {
+  foreignKey: 'id_simulacro', // Clave foránea en Pregunta
+  sourceKey: 'id', // Clave primaria en Simulacro
+  as: 'preguntas' // Alias para la relación
+});
+
+Pregunta.belongsTo(Simulacro, {
+  foreignKey: 'id_simulacro', // Clave foránea en Pregunta
+  targetKey: 'id', // Clave primaria en Simulacro
+  as: 'simulacro' // Alias para la relación
+});
 
 module.exports = {
   Usuario,
   Simulacro,
+  Pregunta,
   conn: sequelize,
 };

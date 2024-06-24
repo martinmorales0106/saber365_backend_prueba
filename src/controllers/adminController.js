@@ -1,4 +1,4 @@
-const { Usuario } = require("../db");
+const { Usuario} = require("../db");
 const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const generarId = require("../helpers/generarId");

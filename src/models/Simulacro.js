@@ -17,6 +17,10 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      grado: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       descripcion: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -40,10 +44,6 @@ module.exports = (sequelize) => {
       precio: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
-      },
-      activo: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
       },
     },
     { timestamps: true, paranoid: true }

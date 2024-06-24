@@ -23,7 +23,7 @@ const emailRegistro = async (datos) => {
       html: `
         <div style="background-color: #001F3F; padding: 50px;">
           <div style="background-color: rgba(52, 152, 219, 0.2); padding: 20px; border-radius: 5px; text-align: center;">
-            <img src="https://asset.cloudinary.com/dnkasq2l0/da9be75955f1738e9843764635d1309e" style="text-align: center; max-width: 100%; width: 260px; height: auto;"/>
+            <img src="https://res.cloudinary.com/dnkasq2l0/image/upload/v1719192799/Logo_principal_color_chwhkg.png" style="text-align: center; max-width: 100%; width: 260px; height: auto;"/>
             <p style="font-family: Ubuntu, Helvetica, Arial, sans-serif; font-size: 18px; color: #ffffff; font-weight: bold; text-align: center;">
               Hola: ${nombreUsuario},
             </p>
@@ -69,7 +69,7 @@ const emailOlvidePassword = async (datos) => {
       html: `
       <div style="background-color: #001F3F; padding: 50px;">
       <div style="background-color: rgba(52, 152, 219, 0.2); padding: 20px; border-radius: 5px; text-align: center;">
-        <img src="https://asset.cloudinary.com/dnkasq2l0/da9be75955f1738e9843764635d1309e" style="text-align: center; max-width: 100%; width: 260px; height: auto;"/>
+        <img src="https://res.cloudinary.com/dnkasq2l0/image/upload/v1719192799/Logo_principal_color_chwhkg.png" style="text-align: center; max-width: 100%; width: 260px; height: auto;"/>
         <p style="font-family: Ubuntu, Helvetica, Arial, sans-serif; font-size: 18px; color: #ffffff; font-weight: bold; text-align: center;">
         Hola: ${nombreUsuario},
         </p>
