@@ -85,10 +85,6 @@ const obtenerPregunta = async (req, res) => {
       }
     });
 
-    if (preguntas.length === 0) {
-      const error = new Error("No se encontraron preguntas");
-      return res.status(401).json({ msg: error.message });
-    }
     // Mapear las preguntas para incluir el título del simulacro en lugar de id_simulacro
     const preguntasConTitulo = preguntas.map(pregunta => {
       const preguntaData = pregunta.toJSON();

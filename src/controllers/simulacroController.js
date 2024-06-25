@@ -29,10 +29,6 @@ const crearSimulacro = async (req, res, next) => {
 const obtenerSimulacro = async (req, res) => {
   try {
     const simulacros = await Simulacro.findAll();
-    if (simulacros.length === 0) {
-      const error = new Error("No se encontraron simulacros");
-      return res.status(401).json({ msg: error.message });
-    }
     res.json(simulacros);
   } catch (error) {
     console.error("Error al obtener simulacro:", error);
