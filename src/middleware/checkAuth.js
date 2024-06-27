@@ -27,10 +27,10 @@ const checkAuth = async (req, res, next) => {
       if (req.usuario) {
         return next();
       } else {
-        return res.status(404).json({ msg: "Usuario no encontrado" });
+        return res.status(200).json({ msg: "Usuario no encontrado" });
       }
     } catch (error) {
-      return res.status(401).json({ msg: "Token no válido" });
+      return res.status(204).json({ msg: "Token no válido" });
     }
   }
 
