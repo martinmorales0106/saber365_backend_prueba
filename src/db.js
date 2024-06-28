@@ -4,16 +4,6 @@ const fs = require("fs");
 const path = require("path");
 const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = process.env;
 
-// crear una instancia de conexión a una base de datos PostgreSQL
-// const sequelize = new Sequelize(
-//   `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/saber365`,
-//   {
-//     logging: false,
-//     native: false,
-//   }
-// );
-
-
 // Conectar con la base de datos de Railway
 const sequelize = new Sequelize(`postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`, {
   logging: false, // Establecer en console.log para ver las consultas SQL sin procesar
@@ -42,7 +32,7 @@ function defineModels() {
 // Llamamos a la función para definir los modelos
 defineModels();
 
-const { Usuario, Simulacro, Pregunta } = sequelize.models;
+const { Usuario, Simulacro, Pregunta, SimulacroRealizado, SimulacroFinalizado } = sequelize.models;
 
 // Relaciones entre modelos
 
@@ -58,9 +48,60 @@ Pregunta.belongsTo(Simulacro, {
   as: 'simulacro' // Alias para la relación
 });
 
+Usuario.hasMany(SimulacroRealizado, {
+  foreignKey: 'id_usuario',
+  sourceKey: 'id',
+  as: 'simulacrosRealizados'
+});
+
+SimulacroRealizado.belongsTo(Usuario, {
+  foreignKey: 'id_usuario',
+  targetKey: 'id',
+  as: 'usuario'
+});
+
+Simulacro.hasMany(SimulacroRealizado, {
+  foreignKey: 'id_simulacro',
+  sourceKey: 'id',
+  as: 'sesionesRealizadas'
+});
+
+SimulacroRealizado.belongsTo(Simulacro, {
+  foreignKey: 'id_simulacro',
+  targetKey: 'id',
+  as: 'simulacro'
+});
+
+// Relaciones para SimulacroFinalizado
+Usuario.hasMany(SimulacroFinalizado, {
+  foreignKey: 'id_usuario',
+  sourceKey: 'id',
+  as: 'simulacrosFinalizados'
+});
+
+SimulacroFinalizado.belongsTo(Usuario, {
+  foreignKey: 'id_usuario',
+  targetKey: 'id',
+  as: 'usuario'
+});
+
+Simulacro.hasMany(SimulacroFinalizado, {
+  foreignKey: 'id_simulacro',
+  sourceKey: 'id',
+  as: 'finalizaciones'
+});
+
+SimulacroFinalizado.belongsTo(Simulacro, {
+  foreignKey: 'id_simulacro',
+  targetKey: 'id',
+  as: 'simulacro'
+});
+
 module.exports = {
   Usuario,
   Simulacro,
   Pregunta,
+  SimulacroRealizado,
+  SimulacroFinalizado,
   conn: sequelize,
 };
