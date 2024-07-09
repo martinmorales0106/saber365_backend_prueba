@@ -1,4 +1,11 @@
-const { Simulacro, Pregunta, SimulacroRealizado, SimulacroFinalizado, Usuario } = require("../db");
+const {
+  Simulacro,
+  Pregunta,
+  SimulacroRealizado,
+  SimulacroFinalizado,
+  Usuario,
+} = require("../db");
+const { Op, sequelize } = require("sequelize");
 
 const obtenerSimulacrosUsuario = async (req, res) => {
   try {
@@ -121,9 +128,13 @@ const simulacroRealizado = async (req, res) => {
     });
 
     // Convertir las cadenas JSON de vuelta a objetos antes de enviarlas en la respuesta
-    registroActualizado.estado_preguntas_sesion1 = JSON.parse(registroActualizado.estado_preguntas_sesion1);
-    registroActualizado.estado_preguntas_sesion2 = JSON.parse(registroActualizado.estado_preguntas_sesion2);
-    
+    registroActualizado.estado_preguntas_sesion1 = JSON.parse(
+      registroActualizado.estado_preguntas_sesion1
+    );
+    registroActualizado.estado_preguntas_sesion2 = JSON.parse(
+      registroActualizado.estado_preguntas_sesion2
+    );
+
     res.json(registroActualizado);
   } catch (error) {
     console.log(error);
@@ -158,19 +169,19 @@ const simulacroFinalizado = async (req, res) => {
       tiempo_prueba,
     } = req.body;
 
-      // Verificar si ya existe un registro con id_usuario e id_simulacro dados
-      const existingRegistro = await SimulacroFinalizado.findOne({
-        where: {
-          id_usuario,
-          id_simulacro,
-        },
+    // Verificar si ya existe un registro con id_usuario e id_simulacro dados
+    const existingRegistro = await SimulacroFinalizado.findOne({
+      where: {
+        id_usuario,
+        id_simulacro,
+      },
+    });
+
+    if (existingRegistro) {
+      return res.status(201).json({
+        msg: "El usuario ya ha realizado este simulacro.",
       });
-  
-      if (existingRegistro) {
-        return res.status(201).json({
-          msg: "El usuario ya ha realizado este simulacro.",
-        });
-      }
+    }
 
     // Crear el registro utilizando Sequelize
     const nuevoRegistro = await SimulacroFinalizado.create({
@@ -208,8 +219,8 @@ const obtenerResultadoSimulacro = async (req, res) => {
     const resultadoSimulacro = await SimulacroFinalizado.findOne({
       where: { id },
       include: [
-        { model: Usuario, as: 'usuario' }, // Incluir datos del usuario con alias 'usuario'
-        { model: Simulacro, as: 'simulacro' }, // Incluir datos del simulacro con alias 'simulacro'
+        { model: Usuario, as: "usuario" }, // Incluir datos del usuario con alias 'usuario'
+        { model: Simulacro, as: "simulacro" }, // Incluir datos del simulacro con alias 'simulacro'
       ],
     });
 
@@ -219,9 +230,15 @@ const obtenerResultadoSimulacro = async (req, res) => {
       });
     }
 
-    resultadoSimulacro.estado_preguntas = JSON.parse(resultadoSimulacro.estado_preguntas);
-    resultadoSimulacro.puntaje_por_area = JSON.parse(resultadoSimulacro.puntaje_por_area);
-    resultadoSimulacro.nivel_por_area = JSON.parse(resultadoSimulacro.nivel_por_area);
+    resultadoSimulacro.estado_preguntas = JSON.parse(
+      resultadoSimulacro.estado_preguntas
+    );
+    resultadoSimulacro.puntaje_por_area = JSON.parse(
+      resultadoSimulacro.puntaje_por_area
+    );
+    resultadoSimulacro.nivel_por_area = JSON.parse(
+      resultadoSimulacro.nivel_por_area
+    );
 
     res.status(200).json({
       resultadoSimulacro,
@@ -246,15 +263,169 @@ const obtenerSimulacroRealizado = async (req, res) => {
       });
     }
 
-    simulacroRealizado.estado_preguntas_sesion1 = JSON.parse(simulacroRealizado.estado_preguntas_sesion1);
-    simulacroRealizado.estado_preguntas_sesion2 = JSON.parse(simulacroRealizado.estado_preguntas_sesion2);
-    
+    simulacroRealizado.estado_preguntas_sesion1 = JSON.parse(
+      simulacroRealizado.estado_preguntas_sesion1
+    );
+    simulacroRealizado.estado_preguntas_sesion2 = JSON.parse(
+      simulacroRealizado.estado_preguntas_sesion2
+    );
+
     res.status(200).json(simulacroRealizado);
   } catch (error) {
     console.error("Error al obtener simulacros:", error);
     res.status(500).json({ error: "Error al obtener simulacros" });
   }
-}
+};
+
+const obtenerSimulacrosFinalizados = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const simulacrosRealizados = await SimulacroFinalizado.findAll({
+      where: { id_usuario: id },
+      include: [
+        { model: Usuario, as: "usuario" }, // Incluir datos del usuario con alias 'usuario'
+        { model: Simulacro, as: "simulacro" }, // Incluir datos del simulacro con alias 'simulacro'
+      ],
+    });
+    if (!simulacrosRealizados || simulacrosRealizados.length === 0) {
+      return res.status(201).json({
+        msg: "No se encontró ningún resultado de simulacro con el ID proporcionado.",
+      });
+    }
+
+    simulacrosRealizados.forEach((simulacro) => {
+      simulacro.estado_preguntas = JSON.parse(simulacro.estado_preguntas);
+      simulacro.puntaje_por_area = JSON.parse(simulacro.puntaje_por_area);
+      simulacro.nivel_por_area = JSON.parse(simulacro.nivel_por_area);
+    });
+
+    res.status(200).json(simulacrosRealizados);
+  } catch (error) {
+    console.error("Error al obtener simulacros:", error);
+    res.status(500).json({ error: "Error al obtener simulacros" });
+  }
+};
+
+// Obtener posición del usuario según puntaje global en un simulacro específico
+const obtenerPosicionUsuarioPorPuntajeGlobal = async (req, res) => {
+  const { simulacroId, usuarioId } = req.params;
+
+  try {
+    // Obtener el puntaje global del usuario en el simulacro específico
+    const { puntaje_global } = await SimulacroFinalizado.findOne({
+      where: {
+        id_simulacro: simulacroId,
+        id_usuario: usuarioId,
+      },
+      attributes: ["puntaje_global"],
+    });
+
+    // Contar cuántos usuarios tienen un puntaje global mayor en el mismo simulacro
+    const posicion = await SimulacroFinalizado.count({
+      where: {
+        id_simulacro: simulacroId,
+        puntaje_global: { [Op.gt]: puntaje_global }, // Operador Sequelize para >
+      },
+    });
+
+    // La posición real es posición + 1, porque se cuenta a partir de 0
+    res.status(200).json({ posicion: posicion + 1 });
+  } catch (error) {
+    console.error("Error al obtener posición del usuario:", error);
+    res.status(500).json({ error: "Error al obtener posición del usuario" });
+  }
+};
+
+// Obtener posición del usuario por área para todas las áreas en un simulacro específico
+const obtenerPosicionesUsuarioPorAreas = async (req, res) => {
+  const { simulacroId, usuarioId } = req.params;
+
+  try {
+    // Obtener el puntaje por área del usuario en el simulacro específico
+    const simulacroFinalizado = await SimulacroFinalizado.findOne({
+      where: {
+        id_simulacro: simulacroId,
+        id_usuario: usuarioId,
+      },
+      attributes: ["puntaje_por_area", "tiempo_prueba"],
+    });
+
+    // Validar que el simulacro finalizado exista y tenga puntajes por área
+    if (!simulacroFinalizado || !simulacroFinalizado.puntaje_por_area) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "No se encontró el simulacro finalizado o no hay puntajes por área.",
+        });
+    }
+
+    // Obtener el objeto de puntajes por área del usuario
+    const puntajesPorArea = JSON.parse(simulacroFinalizado.puntaje_por_area);
+    const tiempoPrueba = simulacroFinalizado.tiempo_prueba;
+
+    // Obtener todos los simulacros finalizados para el simulacro actual
+    const todosSimulacrosFinalizados = await SimulacroFinalizado.findAll({
+      where: {
+        id_simulacro: simulacroId,
+      },
+      attributes: ["id_usuario", "puntaje_por_area", "tiempo_prueba"],
+    });
+
+    // Objeto para almacenar las posiciones por área con nombres de área
+    const posicionesPorArea = {};
+
+    // Definir nombres de las áreas que se esperan
+    const nombresAreas = [
+      "Matemáticas",
+      "Lectura Critica",
+      "Sociales",
+      "Naturales",
+      "Ingles",
+    ];
+
+    // Iterar sobre cada área y obtener la posición del usuario en esa área
+    for (const area of nombresAreas) {
+      // Obtener los puntajes y tiempos de prueba de todos los usuarios en el área actual
+      const puntajesArea = todosSimulacrosFinalizados.map((simulacro) => {
+        const puntajesPorAreaUsuario = JSON.parse(simulacro.puntaje_por_area);
+        return {
+          puntaje: puntajesPorAreaUsuario[area] || 0,
+          tiempo: simulacro.tiempo_prueba,
+        };
+      });
+
+      // Ordenar los puntajes de mayor a menor, y en caso de empate, ordenar por tiempo de prueba de menor a mayor
+      puntajesArea.sort((a, b) => {
+        if (a.puntaje === b.puntaje) {
+          return b.tiempo - a.tiempo;
+        }
+        return b.puntaje - a.puntaje;
+      });
+
+      // Encontrar la posición del usuario en el área actual
+      const posicionUsuario =
+        puntajesArea.findIndex(
+          (item) =>
+            item.puntaje === puntajesPorArea[area] &&
+            item.tiempo === tiempoPrueba
+        ) + 1;
+
+      // Asignar la posición al objeto de posiciones por área
+      posicionesPorArea[area] = posicionUsuario;
+    }
+
+    // Devolver el objeto JSON con las posiciones por área con nombres de área
+    res.status(200).json(posicionesPorArea);
+  } catch (error) {
+    console.error("Error al obtener posiciones del usuario por áreas:", error);
+    res
+      .status(500)
+      .json({ error: "Error al obtener posiciones del usuario por áreas" });
+  }
+};
+
 module.exports = {
   obtenerSimulacrosUsuario,
   obtenerPreguntasUsuario,
@@ -262,4 +433,7 @@ module.exports = {
   simulacroFinalizado,
   obtenerResultadoSimulacro,
   obtenerSimulacroRealizado,
+  obtenerSimulacrosFinalizados,
+  obtenerPosicionUsuarioPorPuntajeGlobal,
+  obtenerPosicionesUsuarioPorAreas,
 };

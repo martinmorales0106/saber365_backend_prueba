@@ -7,6 +7,9 @@ const {
   simulacroFinalizado,
   obtenerResultadoSimulacro,
   obtenerSimulacroRealizado,
+  obtenerSimulacrosFinalizados,
+  obtenerPosicionUsuarioPorPuntajeGlobal,
+  obtenerPosicionesUsuarioPorAreas,
 } = require("../controllers/perfilUsuarioController");
 
 const routePerfilUsuario = Router();
@@ -36,7 +39,25 @@ routePerfilUsuario.get(
 routePerfilUsuario.get(
   "/simulacro-realizado/:id",
   checkAuth,
-  obtenerSimulacroRealizado,
+  obtenerSimulacroRealizado
+);
+
+routePerfilUsuario.get(
+  "/obtener-simulacros-finalizados/:id",
+  checkAuth,
+  obtenerSimulacrosFinalizados
+);
+
+routePerfilUsuario.get(
+  "/obtener-posicion-simulacro/:simulacroId/:usuarioId",
+  checkAuth,
+  obtenerPosicionUsuarioPorPuntajeGlobal
+);
+
+routePerfilUsuario.get(
+  "/obtener-posicion-area/:simulacroId/:usuarioId",
+  checkAuth,
+  obtenerPosicionesUsuarioPorAreas
 );
 
 module.exports = routePerfilUsuario;

@@ -31,7 +31,7 @@ module.exports = (sequelize) => {
       },
       tiempo_prueba: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
       },
       sesion_completada: {
         type: DataTypes.STRING,
