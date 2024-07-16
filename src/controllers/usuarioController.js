@@ -3,6 +3,7 @@ const { Op } = require("sequelize");
 const { emailRegistro, emailOlvidePassword } = require("../helpers/email");
 const generarId = require("../helpers/generarId");
 const generarJWT = require("../helpers/generarJWT");
+const bcrypt = require('bcrypt');
 
 const registrar = async (req, res) => {
   try {
@@ -184,10 +185,78 @@ const comprobarToken = async (req, res) => {
   }
 };
 
+const olvidePassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Buscar al usuario por email en la base de datos
+    const usuario = await Usuario.findOne({ where: { email: email } });
+
+    // Si no se encuentra ningún usuario con ese email
+    if (!usuario) {
+      const error = new Error("El Usuario no existe");
+      return res.status(404).json({ msg: error.message });
+    }
+
+    // Generar un nuevo token y guardarlo en la base de datos del usuario
+    const token = generarId(); // Asumiendo que generarId() genera un token único
+    usuario.token = token; // Asignar el nuevo token al usuario
+    await usuario.save(); // Guardar el usuario actualizado en la base de datos
+
+    // Enviar el correo electrónico para restablecer la contraseña
+    emailOlvidePassword({
+      email: usuario.email,
+      nombreUsuario: usuario.nombreUsuario, // Ajusta el nombre del campo si es necesario
+      token: token,
+    });
+
+    // Respuesta exitosa
+    return res.json({
+      msg: "Hemos enviado un correo electrónico con las instrucciones para restablecer la contraseña",
+    });
+  } catch (error) {
+    console.error("Error en la función olvidar Password:", error);
+    return res.status(500).json({ msg: "Ocurrió un error al procesar la solicitud" });
+  }
+};
+
+const nuevoPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    // Buscar al usuario por el token dado
+    const usuario = await Usuario.findOne({ where: { token: token } });
+
+    // Si se encuentra un usuario con el token dado
+    if (usuario) {
+      // Generar el hash de la nueva contraseña
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Actualizar la contraseña y limpiar el token
+      await usuario.update({ password: hashedPassword, token: null });
+
+      return res.json({ msg: "Contraseña modificada correctamente" });
+    } else {
+      const error = new Error(
+        "Token no válido. Genera otro token en olvide mi contraseña."
+      );
+      return res.status(404).json({ msg: error.message });
+    }
+  } catch (error) {
+    console.error("Error en nuevoPassword:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+
 module.exports = {
   registrar,
   autenticar,
   perfil,
   confirmar,
   comprobarToken,
+  olvidePassword,
+  nuevoPassword,
 };
