@@ -5,7 +5,7 @@ const {
   SimulacroFinalizado,
   Usuario,
 } = require("../db");
-const { Op, sequelize } = require("sequelize");
+const { Op, fn, col } = require("sequelize");
 
 const obtenerSimulacrosUsuario = async (req, res) => {
   try {
@@ -312,25 +312,43 @@ const obtenerPosicionUsuarioPorPuntajeGlobal = async (req, res) => {
   const { simulacroId, usuarioId } = req.params;
 
   try {
-    // Obtener el puntaje global del usuario en el simulacro específico
-    const { puntaje_global } = await SimulacroFinalizado.findOne({
+    // Obtener el puntaje global y tiempo de prueba del usuario en el simulacro específico
+    const { puntaje_global, tiempo_prueba } = await SimulacroFinalizado.findOne(
+      {
+        where: {
+          id_simulacro: simulacroId,
+          id_usuario: usuarioId,
+        },
+        attributes: ["puntaje_global", "tiempo_prueba"],
+      }
+    );
+
+    // Obtener todos los simulacros finalizados para el simulacro actual
+    const todosSimulacrosFinalizados = await SimulacroFinalizado.findAll({
       where: {
         id_simulacro: simulacroId,
-        id_usuario: usuarioId,
       },
-      attributes: ["puntaje_global"],
+      attributes: ["puntaje_global", "tiempo_prueba"],
     });
 
-    // Contar cuántos usuarios tienen un puntaje global mayor en el mismo simulacro
-    const posicion = await SimulacroFinalizado.count({
-      where: {
-        id_simulacro: simulacroId,
-        puntaje_global: { [Op.gt]: puntaje_global }, // Operador Sequelize para >
-      },
+    // Ordenar los puntajes globales de mayor a menor, y en caso de empate, ordenar por tiempo de prueba de menor a mayor
+    const puntajesOrdenados = todosSimulacrosFinalizados.sort((a, b) => {
+      if (a.puntaje_global === b.puntaje_global) {
+        return b.tiempo_prueba - a.tiempo_prueba;
+      }
+      return b.puntaje_global - a.puntaje_global;
     });
 
-    // La posición real es posición + 1, porque se cuenta a partir de 0
-    res.status(200).json({ posicion: posicion + 1 });
+    // Encontrar la posición del usuario en la lista ordenada
+    const posicionUsuario =
+      puntajesOrdenados.findIndex(
+        (item) =>
+          item.puntaje_global === puntaje_global &&
+          item.tiempo_prueba === tiempo_prueba
+      ) + 1;
+
+    // Devolver la posición del usuario
+    res.status(200).json({ posicion: posicionUsuario });
   } catch (error) {
     console.error("Error al obtener posición del usuario:", error);
     res.status(500).json({ error: "Error al obtener posición del usuario" });
@@ -353,12 +371,10 @@ const obtenerPosicionesUsuarioPorAreas = async (req, res) => {
 
     // Validar que el simulacro finalizado exista y tenga puntajes por área
     if (!simulacroFinalizado || !simulacroFinalizado.puntaje_por_area) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "No se encontró el simulacro finalizado o no hay puntajes por área.",
-        });
+      return res.status(404).json({
+        error:
+          "No se encontró el simulacro finalizado o no hay puntajes por área.",
+      });
     }
 
     // Obtener el objeto de puntajes por área del usuario
@@ -426,6 +442,269 @@ const obtenerPosicionesUsuarioPorAreas = async (req, res) => {
   }
 };
 
+const obtenerMejoresPuntajes = async (req, res) => {
+  try {
+    const { usuarioId, gradoUsuario } = req.params;
+
+    // Consultar los 10 mayores puntajes globales de simulacros del mismo grado que el usuario
+    const [mejoresPuntajesGlobales, mayorPuntajeUsuario] = await Promise.all([
+      SimulacroFinalizado.findAll({
+        attributes: ["id_usuario", "puntaje_global", "id_simulacro", "tiempo_prueba"],
+        include: [
+          {
+            model: Usuario,
+            as: "usuario",
+            attributes: ["nombreUsuario", "grado"],
+          },
+          {
+            model: Simulacro,
+            as: "simulacro",
+            attributes: ["grado", "titulo", "tiempo"],
+            where: { grado: gradoUsuario },
+          },
+        ],
+        order: [
+          ["puntaje_global", "DESC"],
+          ["tiempo_prueba", "DESC"],
+        ],
+        limit: 10,
+      }),
+      SimulacroFinalizado.findOne({
+        attributes: ["id_usuario", "puntaje_global", "id_simulacro", "tiempo_prueba"],
+        include: [
+          {
+            model: Usuario,
+            as: "usuario",
+            attributes: ["nombreUsuario", "grado"],
+          },
+          {
+            model: Simulacro,
+            as: "simulacro",
+            attributes: ["grado", "titulo", "tiempo"],
+            where: { grado: gradoUsuario },
+          },
+        ],
+        where: { id_usuario: usuarioId },
+        order: [
+          ["puntaje_global", "DESC"],
+          ["tiempo_prueba", "DESC"],
+        ],
+      }),
+    ]);
+
+    // Consultar la posición del puntaje del usuario si existe
+    let posicion = null;
+    if (mayorPuntajeUsuario) {
+      posicion = await SimulacroFinalizado.count({
+        where: {
+          puntaje_global: { [Op.gt]: mayorPuntajeUsuario.puntaje_global },
+          "$simulacro.grado$": gradoUsuario,
+        },
+        include: [
+          {
+            model: Simulacro,
+            as: "simulacro",
+            attributes: [],
+          },
+        ],
+      });
+    }
+
+    // Mapear los resultados para ajustar el formato de respuesta
+    const resultadosFormateados = {
+      mejoresPuntajesGlobales: mejoresPuntajesGlobales.map((item) => ({
+        id_usuario: item.id_usuario,
+        puntaje_global: item.puntaje_global,
+        tiempo_prueba: item.tiempo_prueba,
+        id_simulacro: item.id_simulacro,
+        titulo: item.simulacro.titulo,
+        tiempo: item.simulacro.tiempo,
+        nombreUsuario: item.usuario.nombreUsuario,
+        grado: item.usuario.grado,
+      })),
+      mayorPuntajeUsuario: mayorPuntajeUsuario
+        ? {
+            id_usuario: mayorPuntajeUsuario.id_usuario,
+            puntaje_global: mayorPuntajeUsuario.puntaje_global,
+            tiempo_prueba: mayorPuntajeUsuario.tiempo_prueba,
+            id_simulacro: mayorPuntajeUsuario.id_simulacro,
+            titulo: mayorPuntajeUsuario.simulacro.titulo,
+            tiempo: mayorPuntajeUsuario.simulacro.tiempo,
+            nombreUsuario: mayorPuntajeUsuario.usuario.nombreUsuario,
+            grado: mayorPuntajeUsuario.usuario.grado,
+            posicion: posicion + 1, // Ajustar a una base de 1 en lugar de 0
+          }
+        : null,
+    };
+
+    // Devolver resultados
+    res.status(200).json(resultadosFormateados);
+  } catch (error) {
+    console.error("Error al obtener los mejores puntajes globales:", error);
+    res.status(500).json({ error: "Error al obtener los mejores puntajes globales" });
+  }
+};
+
+
+const obtenerMejoresPuntajesPorArea = async (req, res) => {
+  try {
+    const { usuarioId, gradoUsuario } = req.params;
+
+    const areas = ["Matemáticas", "Lectura Critica", "Sociales", "Naturales", "Ingles"];
+
+    // Consultar todos los registros de simulacros finalizados del mismo grado que el usuario
+    const simulacrosFinalizados = await SimulacroFinalizado.findAll({
+      attributes: [
+        "id_usuario",
+        "id_simulacro",
+        "tiempo_prueba",
+        "puntaje_por_area",
+      ],
+      include: [
+        {
+          model: Usuario,
+          as: "usuario",
+          attributes: ["nombreUsuario", "grado"],
+        },
+        {
+          model: Simulacro,
+          as: "simulacro",
+          attributes: ["grado", "titulo", "tiempo"],
+          where: { grado: gradoUsuario },
+        },
+      ],
+    });
+
+    // Procesar los datos en JavaScript para cada área
+    const resultadosPorArea = {};
+
+    areas.forEach(area => {
+      // Filtrar simulacros finalizados por área y ordenar por puntaje_area y tiempo_prueba
+      const simulacrosFiltrados = simulacrosFinalizados
+        .filter(item => {
+          const puntajes = JSON.parse(item.puntaje_por_area);
+          return puntajes.hasOwnProperty(area); // Verificar si el área está presente en puntaje_por_area
+        })
+        .map(item => ({
+          id_usuario: item.id_usuario,
+          puntaje_area: JSON.parse(item.puntaje_por_area)[area],
+          tiempo_prueba: item.tiempo_prueba,
+          id_simulacro: item.id_simulacro,
+          titulo: item.simulacro.titulo,
+          tiempo: item.simulacro.tiempo,
+          nombreUsuario: item.usuario.nombreUsuario,
+          grado: item.usuario.grado,
+          area: area,
+        }))
+        .sort((a, b) => b.puntaje_area - a.puntaje_area || b.tiempo_prueba - a.tiempo_prueba);
+
+      // Obtener los mejores puntajes por área (los dos primeros registros)
+      const mejoresPuntajesPorArea = simulacrosFiltrados.slice(0, 1);
+
+      // Obtener el mayor puntaje del usuario para el área específica
+      const puntajesUsuario = simulacrosFiltrados.filter(item => item.id_usuario == usuarioId);
+      const mayorPuntajeUsuario = puntajesUsuario.length > 0 ? puntajesUsuario[0] : null;
+
+      // Obtener la posición del usuario en el ranking de puntajes por área
+      const posicion = simulacrosFiltrados.findIndex(item => item.id_usuario == usuarioId) + 1;
+
+      // Almacenar resultados por área
+      resultadosPorArea[area] = {
+        mejoresPuntajesPorArea: mejoresPuntajesPorArea,
+        mayorPuntajeUsuario: mayorPuntajeUsuario ? { ...mayorPuntajeUsuario, posicion: posicion } : null,
+      };
+    });
+
+    // Devolver resultados
+    res.status(200).json(resultadosPorArea);
+  } catch (error) {
+    console.error("Error al obtener los mejores puntajes por área:", error);
+    res.status(500).json({ error: "Error al obtener los mejores puntajes por área" });
+  }
+};
+
+const obtenerMejorPuntajePorSimulacro = async (req, res) => {
+  try {
+    const { gradoSimulacro } = req.params;
+
+    // Consultar los mayores puntajes globales por simulacro del mismo grado
+    const mejoresPuntajesPorSimulacro = await SimulacroFinalizado.findAll({
+      attributes: [
+        "id_simulacro",
+        [fn("max", col("puntaje_global")), "max_puntaje_global"],
+      ],
+      include: [
+        {
+          model: Simulacro,
+          as: "simulacro",
+          attributes: ["id", "titulo", "grado"],
+          where: { grado: gradoSimulacro },
+        },
+      ],
+      group: ["SimulacroFinalizado.id_simulacro", "simulacro.id", "simulacro.titulo", "simulacro.grado",],
+    });
+
+     // Mapear los resultados para ajustar el formato de respuesta
+     const resultadosFormateados = await Promise.all(mejoresPuntajesPorSimulacro.map(async (item) => {
+      // Obtener el tiempo de prueba del simulacro finalizado
+      const simulacroFinalizado = await SimulacroFinalizado.findOne({
+        where: {
+          id_simulacro: item.id_simulacro,
+          puntaje_global: item.dataValues.max_puntaje_global,
+        },
+        attributes: ["tiempo_prueba"],
+        include: [
+          {
+            model: Usuario,
+            as: "usuario",
+            attributes: ["id", "nombreUsuario"],
+          },
+        ],
+      });
+
+      return {
+        id_simulacro: item.id_simulacro,
+        max_puntaje_global: item.dataValues.max_puntaje_global,
+        tiempo_prueba: simulacroFinalizado ? simulacroFinalizado.tiempo_prueba : null,
+        titulo: item.simulacro.titulo,
+        grado: gradoSimulacro, // Aquí usamos gradoSimulacro pasado como parámetro
+        nombreUsuario: simulacroFinalizado ? simulacroFinalizado.usuario.nombreUsuario : null,
+        id_usuario: simulacroFinalizado ? simulacroFinalizado.usuario.id : null,
+      };
+    }));
+
+    // Devolver resultados
+    res.status(200).json(resultadosFormateados);
+  } catch (error) {
+    console.error("Error al obtener los mejores puntajes globales por simulacro:", error);
+    res.status(500).json({ error: "Error al obtener los mejores puntajes globales por simulacro" });
+  }
+};
+
+const obtenerTodosSimulacrosRealizados = async (req, res) => {
+  try {
+    const simulacrosRealizados = await SimulacroRealizado.findAll();
+
+    if (!simulacrosRealizados || simulacrosRealizados.length === 0) {
+      return res.status(404).json({
+        msg: "No se encontraron resultados de simulacros realizados.",
+      });
+    }
+
+    // Parsear JSON en cada simulacro realizado
+    const simulacrosParseados = simulacrosRealizados.map(simulacro => {
+      simulacro.estado_preguntas_sesion1 = JSON.parse(simulacro.estado_preguntas_sesion1);
+      simulacro.estado_preguntas_sesion2 = JSON.parse(simulacro.estado_preguntas_sesion2);
+      return simulacro;
+    });
+
+    res.status(200).json(simulacrosParseados);
+  } catch (error) {
+    console.error("Error al obtener simulacros realizados:", error);
+    res.status(500).json({ error: "Error al obtener simulacros realizados" });
+  }
+};
+
 module.exports = {
   obtenerSimulacrosUsuario,
   obtenerPreguntasUsuario,
@@ -436,4 +715,8 @@ module.exports = {
   obtenerSimulacrosFinalizados,
   obtenerPosicionUsuarioPorPuntajeGlobal,
   obtenerPosicionesUsuarioPorAreas,
+  obtenerMejoresPuntajes,
+  obtenerMejoresPuntajesPorArea,
+  obtenerMejorPuntajePorSimulacro,
+  obtenerTodosSimulacrosRealizados,
 };

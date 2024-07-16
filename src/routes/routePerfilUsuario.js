@@ -10,6 +10,10 @@ const {
   obtenerSimulacrosFinalizados,
   obtenerPosicionUsuarioPorPuntajeGlobal,
   obtenerPosicionesUsuarioPorAreas,
+  obtenerMejoresPuntajes,
+  obtenerMejoresPuntajesPorArea,
+  obtenerMejorPuntajePorSimulacro,
+  obtenerTodosSimulacrosRealizados,
 } = require("../controllers/perfilUsuarioController");
 
 const routePerfilUsuario = Router();
@@ -58,6 +62,30 @@ routePerfilUsuario.get(
   "/obtener-posicion-area/:simulacroId/:usuarioId",
   checkAuth,
   obtenerPosicionesUsuarioPorAreas
+);
+
+routePerfilUsuario.get(
+  "/obtener-mejores-puntajes/:usuarioId/:gradoUsuario",
+  checkAuth,
+  obtenerMejoresPuntajes
+);
+
+routePerfilUsuario.get(
+  "/obtener-mejores-puntajes-por-area/:usuarioId/:gradoUsuario",
+  checkAuth,
+  obtenerMejoresPuntajesPorArea
+);
+
+routePerfilUsuario.get(
+  "/obtener-mejores-puntajes-por-simulacro/:gradoSimulacro",
+  checkAuth,
+  obtenerMejorPuntajePorSimulacro
+);
+
+routePerfilUsuario.get(
+  "/obtener-simulacros-realizados",
+  checkAuth,
+  obtenerTodosSimulacrosRealizados
 );
 
 module.exports = routePerfilUsuario;
