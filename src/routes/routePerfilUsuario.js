@@ -14,6 +14,8 @@ const {
   obtenerMejoresPuntajesPorArea,
   obtenerMejorPuntajePorSimulacro,
   obtenerTodosSimulacrosRealizados,
+  updateUser,
+  updateUserPassword,
 } = require("../controllers/perfilUsuarioController");
 
 const routePerfilUsuario = Router();
@@ -87,5 +89,8 @@ routePerfilUsuario.get(
   checkAuth,
   obtenerTodosSimulacrosRealizados
 );
+
+routePerfilUsuario.put("/editar-usuario/:id", checkAuth, updateUser);
+routePerfilUsuario.put("/editar-usuario-contrasena/:id", checkAuth, updateUserPassword);
 
 module.exports = routePerfilUsuario;

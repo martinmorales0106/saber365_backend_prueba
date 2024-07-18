@@ -6,6 +6,7 @@ const {
   Usuario,
 } = require("../db");
 const { Op, fn, col } = require("sequelize");
+const bcrypt = require("bcrypt");
 
 const obtenerSimulacrosUsuario = async (req, res) => {
   try {
@@ -449,7 +450,12 @@ const obtenerMejoresPuntajes = async (req, res) => {
     // Consultar los 10 mayores puntajes globales de simulacros del mismo grado que el usuario
     const [mejoresPuntajesGlobales, mayorPuntajeUsuario] = await Promise.all([
       SimulacroFinalizado.findAll({
-        attributes: ["id_usuario", "puntaje_global", "id_simulacro", "tiempo_prueba"],
+        attributes: [
+          "id_usuario",
+          "puntaje_global",
+          "id_simulacro",
+          "tiempo_prueba",
+        ],
         include: [
           {
             model: Usuario,
@@ -470,7 +476,12 @@ const obtenerMejoresPuntajes = async (req, res) => {
         limit: 10,
       }),
       SimulacroFinalizado.findOne({
-        attributes: ["id_usuario", "puntaje_global", "id_simulacro", "tiempo_prueba"],
+        attributes: [
+          "id_usuario",
+          "puntaje_global",
+          "id_simulacro",
+          "tiempo_prueba",
+        ],
         include: [
           {
             model: Usuario,
@@ -541,16 +552,23 @@ const obtenerMejoresPuntajes = async (req, res) => {
     res.status(200).json(resultadosFormateados);
   } catch (error) {
     console.error("Error al obtener los mejores puntajes globales:", error);
-    res.status(500).json({ error: "Error al obtener los mejores puntajes globales" });
+    res
+      .status(500)
+      .json({ error: "Error al obtener los mejores puntajes globales" });
   }
 };
-
 
 const obtenerMejoresPuntajesPorArea = async (req, res) => {
   try {
     const { usuarioId, gradoUsuario } = req.params;
 
-    const areas = ["Matemáticas", "Lectura Critica", "Sociales", "Naturales", "Ingles"];
+    const areas = [
+      "Matemáticas",
+      "Lectura Critica",
+      "Sociales",
+      "Naturales",
+      "Ingles",
+    ];
 
     // Consultar todos los registros de simulacros finalizados del mismo grado que el usuario
     const simulacrosFinalizados = await SimulacroFinalizado.findAll({
@@ -578,14 +596,14 @@ const obtenerMejoresPuntajesPorArea = async (req, res) => {
     // Procesar los datos en JavaScript para cada área
     const resultadosPorArea = {};
 
-    areas.forEach(area => {
+    areas.forEach((area) => {
       // Filtrar simulacros finalizados por área y ordenar por puntaje_area y tiempo_prueba
       const simulacrosFiltrados = simulacrosFinalizados
-        .filter(item => {
+        .filter((item) => {
           const puntajes = JSON.parse(item.puntaje_por_area);
           return puntajes.hasOwnProperty(area); // Verificar si el área está presente en puntaje_por_area
         })
-        .map(item => ({
+        .map((item) => ({
           id_usuario: item.id_usuario,
           puntaje_area: JSON.parse(item.puntaje_por_area)[area],
           tiempo_prueba: item.tiempo_prueba,
@@ -596,22 +614,32 @@ const obtenerMejoresPuntajesPorArea = async (req, res) => {
           grado: item.usuario.grado,
           area: area,
         }))
-        .sort((a, b) => b.puntaje_area - a.puntaje_area || b.tiempo_prueba - a.tiempo_prueba);
+        .sort(
+          (a, b) =>
+            b.puntaje_area - a.puntaje_area || b.tiempo_prueba - a.tiempo_prueba
+        );
 
       // Obtener los mejores puntajes por área (los dos primeros registros)
       const mejoresPuntajesPorArea = simulacrosFiltrados.slice(0, 1);
 
       // Obtener el mayor puntaje del usuario para el área específica
-      const puntajesUsuario = simulacrosFiltrados.filter(item => item.id_usuario == usuarioId);
-      const mayorPuntajeUsuario = puntajesUsuario.length > 0 ? puntajesUsuario[0] : null;
+      const puntajesUsuario = simulacrosFiltrados.filter(
+        (item) => item.id_usuario == usuarioId
+      );
+      const mayorPuntajeUsuario =
+        puntajesUsuario.length > 0 ? puntajesUsuario[0] : null;
 
       // Obtener la posición del usuario en el ranking de puntajes por área
-      const posicion = simulacrosFiltrados.findIndex(item => item.id_usuario == usuarioId) + 1;
+      const posicion =
+        simulacrosFiltrados.findIndex((item) => item.id_usuario == usuarioId) +
+        1;
 
       // Almacenar resultados por área
       resultadosPorArea[area] = {
         mejoresPuntajesPorArea: mejoresPuntajesPorArea,
-        mayorPuntajeUsuario: mayorPuntajeUsuario ? { ...mayorPuntajeUsuario, posicion: posicion } : null,
+        mayorPuntajeUsuario: mayorPuntajeUsuario
+          ? { ...mayorPuntajeUsuario, posicion: posicion }
+          : null,
       };
     });
 
@@ -619,7 +647,9 @@ const obtenerMejoresPuntajesPorArea = async (req, res) => {
     res.status(200).json(resultadosPorArea);
   } catch (error) {
     console.error("Error al obtener los mejores puntajes por área:", error);
-    res.status(500).json({ error: "Error al obtener los mejores puntajes por área" });
+    res
+      .status(500)
+      .json({ error: "Error al obtener los mejores puntajes por área" });
   }
 };
 
@@ -641,43 +671,63 @@ const obtenerMejorPuntajePorSimulacro = async (req, res) => {
           where: { grado: gradoSimulacro },
         },
       ],
-      group: ["SimulacroFinalizado.id_simulacro", "simulacro.id", "simulacro.titulo", "simulacro.grado",],
+      group: [
+        "SimulacroFinalizado.id_simulacro",
+        "simulacro.id",
+        "simulacro.titulo",
+        "simulacro.grado",
+      ],
     });
 
-     // Mapear los resultados para ajustar el formato de respuesta
-     const resultadosFormateados = await Promise.all(mejoresPuntajesPorSimulacro.map(async (item) => {
-      // Obtener el tiempo de prueba del simulacro finalizado
-      const simulacroFinalizado = await SimulacroFinalizado.findOne({
-        where: {
-          id_simulacro: item.id_simulacro,
-          puntaje_global: item.dataValues.max_puntaje_global,
-        },
-        attributes: ["tiempo_prueba"],
-        include: [
-          {
-            model: Usuario,
-            as: "usuario",
-            attributes: ["id", "nombreUsuario"],
+    // Mapear los resultados para ajustar el formato de respuesta
+    const resultadosFormateados = await Promise.all(
+      mejoresPuntajesPorSimulacro.map(async (item) => {
+        // Obtener el tiempo de prueba del simulacro finalizado
+        const simulacroFinalizado = await SimulacroFinalizado.findOne({
+          where: {
+            id_simulacro: item.id_simulacro,
+            puntaje_global: item.dataValues.max_puntaje_global,
           },
-        ],
-      });
+          attributes: ["tiempo_prueba"],
+          include: [
+            {
+              model: Usuario,
+              as: "usuario",
+              attributes: ["id", "nombreUsuario"],
+            },
+          ],
+        });
 
-      return {
-        id_simulacro: item.id_simulacro,
-        max_puntaje_global: item.dataValues.max_puntaje_global,
-        tiempo_prueba: simulacroFinalizado ? simulacroFinalizado.tiempo_prueba : null,
-        titulo: item.simulacro.titulo,
-        grado: gradoSimulacro, // Aquí usamos gradoSimulacro pasado como parámetro
-        nombreUsuario: simulacroFinalizado ? simulacroFinalizado.usuario.nombreUsuario : null,
-        id_usuario: simulacroFinalizado ? simulacroFinalizado.usuario.id : null,
-      };
-    }));
+        return {
+          id_simulacro: item.id_simulacro,
+          max_puntaje_global: item.dataValues.max_puntaje_global,
+          tiempo_prueba: simulacroFinalizado
+            ? simulacroFinalizado.tiempo_prueba
+            : null,
+          titulo: item.simulacro.titulo,
+          grado: gradoSimulacro, // Aquí usamos gradoSimulacro pasado como parámetro
+          nombreUsuario: simulacroFinalizado
+            ? simulacroFinalizado.usuario.nombreUsuario
+            : null,
+          id_usuario: simulacroFinalizado
+            ? simulacroFinalizado.usuario.id
+            : null,
+        };
+      })
+    );
 
     // Devolver resultados
     res.status(200).json(resultadosFormateados);
   } catch (error) {
-    console.error("Error al obtener los mejores puntajes globales por simulacro:", error);
-    res.status(500).json({ error: "Error al obtener los mejores puntajes globales por simulacro" });
+    console.error(
+      "Error al obtener los mejores puntajes globales por simulacro:",
+      error
+    );
+    res
+      .status(500)
+      .json({
+        error: "Error al obtener los mejores puntajes globales por simulacro",
+      });
   }
 };
 
@@ -692,9 +742,13 @@ const obtenerTodosSimulacrosRealizados = async (req, res) => {
     }
 
     // Parsear JSON en cada simulacro realizado
-    const simulacrosParseados = simulacrosRealizados.map(simulacro => {
-      simulacro.estado_preguntas_sesion1 = JSON.parse(simulacro.estado_preguntas_sesion1);
-      simulacro.estado_preguntas_sesion2 = JSON.parse(simulacro.estado_preguntas_sesion2);
+    const simulacrosParseados = simulacrosRealizados.map((simulacro) => {
+      simulacro.estado_preguntas_sesion1 = JSON.parse(
+        simulacro.estado_preguntas_sesion1
+      );
+      simulacro.estado_preguntas_sesion2 = JSON.parse(
+        simulacro.estado_preguntas_sesion2
+      );
       return simulacro;
     });
 
@@ -702,6 +756,111 @@ const obtenerTodosSimulacrosRealizados = async (req, res) => {
   } catch (error) {
     console.error("Error al obtener simulacros realizados:", error);
     res.status(500).json({ error: "Error al obtener simulacros realizados" });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombreUsuario, email, colegio, grado } = req.body;
+
+    const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
+
+    if (!usuarioBd) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+
+    // Verificar si ya existe un usuario con el mismo nombre de usuario
+
+    if (nombreUsuario && nombreUsuario !== usuarioBd.dataValues.nombreUsuario) {
+      const existeUsuario = await Usuario.findOne({
+        where: { nombreUsuario },
+        paranoid: false,
+      });
+
+      if (existeUsuario) {
+        if (existeUsuario.deletedAt) {
+          return res.status(400).json({
+            msg: `Nombre de usuario ya registrado pero fue eliminado el ${existeUsuario.deletedAt}. Por favor, contacta al administrador para más detalles.`,
+          });
+        } else {
+          return res.status(400).json({
+            msg: "Nombre de usuario ya registrado. Por favor, elige otro nombre de usuario.",
+          });
+        }
+      }
+    }
+
+    // Verificar si el nuevo email ya está registrado por otro usuario
+    if (email && email !== usuarioBd.dataValues.email) {
+      const emailExists = await Usuario.findOne({
+        where: { email },
+        paranoid: false,
+      });
+
+      if (emailExists) {
+        if (emailExists.deletedAt) {
+          return res.status(400).json({
+            msg: `Correo electrónico ya registrado pero fue eliminado el ${emailExists.deletedAt}. Por favor, contacta al administrador para más detalles.`,
+          });
+        } else {
+          return res.status(400).json({
+            msg: "Correo electrónico ya registrado. Por favor, utiliza otro correo electrónico.",
+          });
+        }
+      }
+    }
+
+
+    // Actualizar campos de perfil
+    usuarioBd.nombreUsuario = nombreUsuario || usuarioBd.nombreUsuario;
+    usuarioBd.email = email || usuarioBd.email;
+    usuarioBd.colegio = colegio.toUpperCase() || usuarioBd.colegio;
+    usuarioBd.grado = grado || usuarioBd.grado;
+
+    await usuarioBd.save();
+
+    res
+      .status(200)
+      .json({ msg: "Usuario actualizado exitosamente", usuario: usuarioBd });
+  } catch (error) {
+    console.error("Error al editar usuario:", error);
+    res.status(500).json({ msg: "Error al editar usuario" });
+  }
+};
+
+const updateUserPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password, nuevoPassword  } = req.body;
+
+    const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
+  
+    if (!usuarioBd) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+
+    const contraseñaValida = await usuarioBd.comprobarPassword(password);
+    if (!contraseñaValida) {
+      const error = new Error("Contraseña incorrecta");
+      console.log(error);
+      return res.status(401).json({ msg: error.message });
+    }
+
+    if (nuevoPassword) {
+      const salt = await bcrypt.genSalt(10);
+      usuarioBd.password =
+        (await bcrypt.hash(nuevoPassword, salt)) || usuarioBd.password;
+    }
+
+    await usuarioBd.save();
+
+    res
+      .status(200)
+      .json({ msg: "Contraseña actualizada exitosamente" });
+  } catch (error) {
+    console.error("Error al editar usuario:", error);
+    res.status(500).json({ msg: "Error al editar usuario" });
   }
 };
 
@@ -719,4 +878,6 @@ module.exports = {
   obtenerMejoresPuntajesPorArea,
   obtenerMejorPuntajePorSimulacro,
   obtenerTodosSimulacrosRealizados,
+  updateUser,
+  updateUserPassword,
 };

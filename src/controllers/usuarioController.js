@@ -3,17 +3,12 @@ const { Op } = require("sequelize");
 const { emailRegistro, emailOlvidePassword } = require("../helpers/email");
 const generarId = require("../helpers/generarId");
 const generarJWT = require("../helpers/generarJWT");
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
 const registrar = async (req, res) => {
   try {
-    const {
-      nombreUsuario,
-      email,
-      colegio,
-    } = req.body;
+    const { nombreUsuario, email, colegio } = req.body;
 
-    
     // Verificar si ya existe un usuario con el mismo nombre de usuario, incluidos los eliminados
     const existeUsuario = await Usuario.findOne({
       where: { nombreUsuario },
@@ -31,7 +26,6 @@ const registrar = async (req, res) => {
         });
       }
     }
-
 
     // Verificar si ya existe un email con el mismo correo electrónico, incluidos los eliminados
     const existeEmail = await Usuario.findOne({
@@ -86,10 +80,7 @@ const autenticar = async (req, res) => {
     // Buscar usuario por nombre de usuario o correo electrónico
     const usuario = await Usuario.findOne({
       where: {
-        [Op.or]: [
-          { nombreUsuario: username },
-          { email: username },
-        ],
+        [Op.or]: [{ nombreUsuario: username }, { email: username }],
       },
     });
 
@@ -216,7 +207,9 @@ const olvidePassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Error en la función olvidar Password:", error);
-    return res.status(500).json({ msg: "Ocurrió un error al procesar la solicitud" });
+    return res
+      .status(500)
+      .json({ msg: "Ocurrió un error al procesar la solicitud" });
   }
 };
 
