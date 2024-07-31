@@ -113,7 +113,9 @@ const editarSimulacro = async (req, res) => {
       grado,
       descripcion,
       cantidad_preguntas,
+      cantidad_preguntas2,
       tiempo,
+      tiempo2,
       numero_sesiones,
       puntaje_maximo,
       precio,
@@ -154,7 +156,9 @@ const editarSimulacro = async (req, res) => {
     simulacroBd.grado = grado || simulacroBd.grado;
     simulacroBd.descripcion = descripcion || simulacroBd.descripcion;
     simulacroBd.cantidad_preguntas = cantidad_preguntas || simulacroBd.cantidad_preguntas;
+    simulacroBd.cantidad_preguntas2 = cantidad_preguntas2 || simulacroBd.cantidad_preguntas2;
     simulacroBd.tiempo = tiempo || simulacroBd.tiempo;
+    simulacroBd.tiempo2 = tiempo2 || simulacroBd.tiempo2;
     simulacroBd.numero_sesiones = numero_sesiones || simulacroBd.numero_sesiones;
     simulacroBd.puntaje_maximo = puntaje_maximo || simulacroBd.puntaje_maximo;
     simulacroBd.precio = precio || simulacroBd.precio;

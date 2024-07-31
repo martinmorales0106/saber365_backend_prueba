@@ -29,9 +29,17 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      cantidad_preguntas2: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       tiempo: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      tiempo2: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
       numero_sesiones: {
         type: DataTypes.INTEGER,
@@ -44,6 +52,10 @@ module.exports = (sequelize) => {
       precio: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+      },
+      activo: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
       },
     },
     { timestamps: true, paranoid: true }

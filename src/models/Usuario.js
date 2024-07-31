@@ -10,6 +10,14 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
+      nombres: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      apellidos: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       nombreUsuario: {
         type: DataTypes.STRING,
         unique: true,
@@ -42,6 +50,10 @@ module.exports = (sequelize) => {
         allowNull: true,
       },
       admin: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      afiliado: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },

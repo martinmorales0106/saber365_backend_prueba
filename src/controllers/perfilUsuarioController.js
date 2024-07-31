@@ -125,6 +125,11 @@ const simulacroRealizado = async (req, res) => {
 
     // Obtener el registro actualizado
     const registroActualizado = await SimulacroRealizado.findOne({
+      include: {
+        model: Simulacro,
+        as: "simulacro", // Usar el alias definido en la relación
+        attributes: ["titulo"],
+      },
       where: { id_usuario, id_simulacro },
     });
 
@@ -256,6 +261,11 @@ const obtenerSimulacroRealizado = async (req, res) => {
 
   try {
     const simulacroRealizado = await SimulacroRealizado.findOne({
+      include: {
+        model: Simulacro,
+        as: "simulacro", // Usar el alias definido en la relación
+        attributes: ["titulo"],
+      },
       where: { id },
     });
     if (!simulacroRealizado) {
@@ -723,11 +733,9 @@ const obtenerMejorPuntajePorSimulacro = async (req, res) => {
       "Error al obtener los mejores puntajes globales por simulacro:",
       error
     );
-    res
-      .status(500)
-      .json({
-        error: "Error al obtener los mejores puntajes globales por simulacro",
-      });
+    res.status(500).json({
+      error: "Error al obtener los mejores puntajes globales por simulacro",
+    });
   }
 };
 
@@ -811,7 +819,6 @@ const updateUser = async (req, res) => {
       }
     }
 
-
     // Actualizar campos de perfil
     usuarioBd.nombreUsuario = nombreUsuario || usuarioBd.nombreUsuario;
     usuarioBd.email = email || usuarioBd.email;
@@ -832,10 +839,10 @@ const updateUser = async (req, res) => {
 const updateUserPassword = async (req, res) => {
   try {
     const { id } = req.params;
-    const { password, nuevoPassword  } = req.body;
+    const { password, nuevoPassword } = req.body;
 
     const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
-  
+
     if (!usuarioBd) {
       return res.status(404).json({ msg: "Usuario no encontrado" });
     }
@@ -855,9 +862,7 @@ const updateUserPassword = async (req, res) => {
 
     await usuarioBd.save();
 
-    res
-      .status(200)
-      .json({ msg: "Contraseña actualizada exitosamente" });
+    res.status(200).json({ msg: "Contraseña actualizada exitosamente" });
   } catch (error) {
     console.error("Error al editar usuario:", error);
     res.status(500).json({ msg: "Error al editar usuario" });

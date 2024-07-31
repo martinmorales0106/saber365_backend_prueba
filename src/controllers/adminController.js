@@ -5,7 +5,7 @@ const generarId = require("../helpers/generarId");
 
 const crearUsuario = async (req, res) => {
   try {
-    const { nombreUsuario, password, colegio, grado, email, admin } = req.body;
+    const { nombreUsuario, password, colegio, grado, email, admin, nombres, apellidos, afiliado } = req.body;
 
     // Verificar si ya existe un usuario con el mismo nombre de usuario, incluidos los eliminados
     const existeUsuario = await Usuario.findOne({
@@ -51,6 +51,9 @@ const crearUsuario = async (req, res) => {
       grado,
       password,
       admin,
+      nombres,
+      apellidos,
+      afiliado,
       confirmado: true,
     });
 
@@ -158,7 +161,7 @@ const recuperarUsuario = async (req, res) => {
 const editarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombreUsuario, email, colegio, grado, admin, password } = req.body;
+    const { nombreUsuario, email, colegio, grado, admin, password, nombres, apellidos, afiliado } = req.body;
 
     const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
 
@@ -217,8 +220,12 @@ const editarUsuario = async (req, res) => {
     usuarioBd.nombreUsuario = nombreUsuario || usuarioBd.nombreUsuario;
     usuarioBd.email = email || usuarioBd.email;
     usuarioBd.admin = admin || usuarioBd.admin;
+    usuarioBd.afiliado = afiliado || usuarioBd.afiliado;
     usuarioBd.colegio = colegio.toUpperCase() || usuarioBd.colegio;
     usuarioBd.grado = grado || usuarioBd.grado;
+    usuarioBd.nombres = nombres || usuarioBd.nombres;
+    usuarioBd.apellidos =apellidos || usuarioBd.apellidos;
+
 
     await usuarioBd.save();
 

@@ -6,11 +6,17 @@ const crearPregunta = async (req, res, next) => {
     const {
       contexto,
       imagen,
+      titulo_texto,
+      pie_texto,
       pregunta,
       opcionA,
       opcionB,
       opcionC,
       opcionD,
+      opcionE,
+      opcionF,
+      opcionG,
+      opcionH,
       respuesta_correcta,
       afirmacion,
       evidencia,
@@ -22,7 +28,13 @@ const crearPregunta = async (req, res, next) => {
       competencia,
       componente,
       nivel,
+      tema,
+      sub_tema,
+      opcion_invalida,
+      img_opcion_invalida,
+      enlace,
       simulacro,
+      numero,
     } = req.body;
 
     // Busca el simulacro por su título
@@ -44,13 +56,20 @@ const crearPregunta = async (req, res, next) => {
 
     // Crear una nueva pregunta
     const nuevaPregunta = await Pregunta.create({
+      numero,
       contexto,
       imagen,
+      titulo_texto,
+      pie_texto,
       pregunta,
       opcionA,
       opcionB,
       opcionC,
       opcionD,
+      opcionE,
+      opcionF,
+      opcionG,
+      opcionH,
       respuesta_correcta,
       afirmacion,
       evidencia,
@@ -62,6 +81,11 @@ const crearPregunta = async (req, res, next) => {
       competencia,
       componente,
       nivel,
+      tema,
+      sub_tema,
+      opcion_invalida,
+      img_opcion_invalida,
+      enlace,
       id_simulacro: Number(simulacroId),
     });
 
@@ -80,13 +104,13 @@ const obtenerPregunta = async (req, res) => {
     const preguntas = await Pregunta.findAll({
       include: {
         model: Simulacro,
-        as: 'simulacro', // Usar el alias definido en la relación
-        attributes: ['titulo']
-      }
+        as: "simulacro", // Usar el alias definido en la relación
+        attributes: ["titulo"],
+      },
     });
 
     // Mapear las preguntas para incluir el título del simulacro en lugar de id_simulacro
-    const preguntasConTitulo = preguntas.map(pregunta => {
+    const preguntasConTitulo = preguntas.map((pregunta) => {
       const preguntaData = pregunta.toJSON();
       preguntaData.titulo_simulacro = preguntaData.simulacro.titulo;
       delete preguntaData.simulacro;
@@ -174,11 +198,17 @@ const editarPregunta = async (req, res) => {
     const {
       contexto,
       imagen,
+      titulo_texto,
+      pie_texto,
       pregunta,
       opcionA,
       opcionB,
       opcionC,
       opcionD,
+      opcionE,
+      opcionF,
+      opcionG,
+      opcionH,
       respuesta_correcta,
       afirmacion,
       evidencia,
@@ -190,6 +220,12 @@ const editarPregunta = async (req, res) => {
       competencia,
       componente,
       nivel,
+      tema,
+      sub_tema,
+      opcion_invalida,
+      img_opcion_invalida,
+      enlace,
+      numero,
       simulacro,
     } = req.body;
 
@@ -217,13 +253,20 @@ const editarPregunta = async (req, res) => {
     }
 
     // Actualizar campos de perfil
+    preguntaBd.numero = numero || preguntaBd.numero;
     preguntaBd.contexto = contexto || preguntaBd.contexto;
     preguntaBd.imagen = imagen || preguntaBd.imagen;
     preguntaBd.pregunta = pregunta || preguntaBd.pregunta;
+    preguntaBd.titulo_texto = titulo_texto || preguntaBd.titulo_texto;
+    preguntaBd.pie_texto = pie_texto || preguntaBd.pie_texto;
     preguntaBd.opcionA = opcionA || preguntaBd.opcionA;
     preguntaBd.opcionB = opcionB || preguntaBd.opcionB;
     preguntaBd.opcionC = opcionC || preguntaBd.opcionC;
     preguntaBd.opcionD = opcionD || preguntaBd.opcionD;
+    preguntaBd.opcionE = opcionE || preguntaBd.opcionE;
+    preguntaBd.opcionF = opcionF || preguntaBd.opcionF;
+    preguntaBd.opcionG = opcionG || preguntaBd.opcionG;
+    preguntaBd.opcionH = opcionH || preguntaBd.opcionH;
     preguntaBd.respuesta_correcta =
       respuesta_correcta || preguntaBd.respuesta_correcta;
     preguntaBd.afirmacion = afirmacion || preguntaBd.afirmacion;
@@ -237,16 +280,20 @@ const editarPregunta = async (req, res) => {
     preguntaBd.competencia = competencia || preguntaBd.competencia;
     preguntaBd.componente = componente || preguntaBd.componente;
     preguntaBd.nivel = nivel || preguntaBd.nivel;
+    preguntaBd.tema = tema || preguntaBd.tema;
+    preguntaBd.sub_tema = sub_tema || preguntaBd.sub_tema;
+    preguntaBd.opcion_invalida = opcion_invalida || preguntaBd.opcion_invalida;
+    preguntaBd.img_opcion_invalida =
+      img_opcion_invalida || preguntaBd.img_opcion_invalida;
+    preguntaBd.enlace = enlace || preguntaBd.enlace;
     preguntaBd.id_simulacro = Number(simulacroId) || preguntaBd.id_simulacro;
 
     await preguntaBd.save();
 
-    res
-      .status(200)
-      .json({
-        msg: "Pregunta actualizada exitosamente",
-        pregunta: preguntaBd,
-      });
+    res.status(200).json({
+      msg: "Pregunta actualizada exitosamente",
+      pregunta: preguntaBd,
+    });
   } catch (error) {
     console.error("Error al editar pregunta:", error);
     res.status(500).json({ msg: "Error al editar pregunta" });
