@@ -45,6 +45,16 @@ module.exports = (sequelize) => {
         allowNull: false,
         trim: true,
       },
+      departamento: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        trim: true,
+      },
+      municipio: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        trim: true,
+      },
       token: {
         type: DataTypes.STRING,
         allowNull: true,

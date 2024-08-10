@@ -1,11 +1,23 @@
-const { Usuario} = require("../db");
+const { Usuario } = require("../db");
 const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const generarId = require("../helpers/generarId");
 
 const crearUsuario = async (req, res) => {
   try {
-    const { nombreUsuario, password, colegio, grado, email, admin, nombres, apellidos, afiliado } = req.body;
+    const {
+      nombreUsuario,
+      password,
+      colegio,
+      grado,
+      email,
+      admin,
+      nombres,
+      apellidos,
+      afiliado,
+      departamento,
+      municipio,
+    } = req.body;
 
     // Verificar si ya existe un usuario con el mismo nombre de usuario, incluidos los eliminados
     const existeUsuario = await Usuario.findOne({
@@ -48,6 +60,8 @@ const crearUsuario = async (req, res) => {
       nombreUsuario,
       email,
       colegio,
+      departamento,
+      municipio,
       grado,
       password,
       admin,
@@ -161,7 +175,19 @@ const recuperarUsuario = async (req, res) => {
 const editarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombreUsuario, email, colegio, grado, admin, password, nombres, apellidos, afiliado } = req.body;
+    const {
+      nombreUsuario,
+      email,
+      colegio,
+      grado,
+      admin,
+      password,
+      nombres,
+      apellidos,
+      afiliado,
+      departamento,
+      municipio,
+    } = req.body;
 
     const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
 
@@ -224,8 +250,9 @@ const editarUsuario = async (req, res) => {
     usuarioBd.colegio = colegio.toUpperCase() || usuarioBd.colegio;
     usuarioBd.grado = grado || usuarioBd.grado;
     usuarioBd.nombres = nombres || usuarioBd.nombres;
-    usuarioBd.apellidos =apellidos || usuarioBd.apellidos;
-
+    usuarioBd.apellidos = apellidos || usuarioBd.apellidos;
+    usuarioBd.departamento = departamento || usuarioBd.departamento;
+    usuarioBd.municipio = municipio || usuarioBd.municipio;
 
     await usuarioBd.save();
 

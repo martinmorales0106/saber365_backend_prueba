@@ -410,6 +410,8 @@ const obtenerPosicionesUsuarioPorAreas = async (req, res) => {
       "Sociales",
       "Naturales",
       "Ingles",
+      "Lenguaje",
+      "C. Ciudadanas",
     ];
 
     // Iterar sobre cada área y obtener la posición del usuario en esa área
@@ -578,6 +580,8 @@ const obtenerMejoresPuntajesPorArea = async (req, res) => {
       "Sociales",
       "Naturales",
       "Ingles",
+      "Lenguaje",
+      "C. Ciudadanas",
     ];
 
     // Consultar todos los registros de simulacros finalizados del mismo grado que el usuario
@@ -770,7 +774,16 @@ const obtenerTodosSimulacrosRealizados = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombreUsuario, email, colegio, grado } = req.body;
+    const {
+      nombreUsuario,
+      email,
+      colegio,
+      grado,
+      nombres,
+      apellidos,
+      departamento,
+      municipio,
+    } = req.body;
 
     const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
 
@@ -824,12 +837,31 @@ const updateUser = async (req, res) => {
     usuarioBd.email = email || usuarioBd.email;
     usuarioBd.colegio = colegio.toUpperCase() || usuarioBd.colegio;
     usuarioBd.grado = grado || usuarioBd.grado;
+    usuarioBd.nombres = nombres || usuarioBd.nombres;
+    usuarioBd.apellidos = apellidos || usuarioBd.apellidos;
+    usuarioBd.departamento = departamento || usuarioBd.departamento;
+    usuarioBd.municipio = municipio || usuarioBd.municipio;
 
     await usuarioBd.save();
 
-    res
-      .status(200)
-      .json({ msg: "Usuario actualizado exitosamente", usuario: usuarioBd });
+     // Crear un nuevo objeto excluyendo los campos no deseados
+     const usuarioActualizado = {
+      id: usuarioBd.id,
+      nombres: usuarioBd.nombres,
+      apellidos: usuarioBd.apellidos,
+      nombreUsuario: usuarioBd.nombreUsuario,
+      grado: usuarioBd.grado,
+      email: usuarioBd.email,
+      colegio: usuarioBd.colegio,
+      departamento: usuarioBd.departamento,
+      municipio: usuarioBd.municipio,
+      afiliado: usuarioBd.afiliado,
+      confirmado: usuarioBd.confirmado,
+      admin: usuarioBd.admin
+    };
+
+    res.status(200).json({ msg: "Usuario actualizado exitosamente", usuario: usuarioActualizado });
+
   } catch (error) {
     console.error("Error al editar usuario:", error);
     res.status(500).json({ msg: "Error al editar usuario" });

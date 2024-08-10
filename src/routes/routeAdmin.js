@@ -28,6 +28,8 @@ const {
   editarPregunta,
 } = require("../controllers/preguntaController");
 
+const { updateUser, updateUserPassword } = require("../controllers/usuarioController");
+
 const routeAdmin = Router();
 
 routeAdmin.post("/crear-usuario", checkAuthAdmin, crearUsuario);
@@ -50,5 +52,8 @@ routeAdmin.delete("/eliminar-pregunta/:id", checkAuthAdmin, eliminarPregunta);
 routeAdmin.get("/preguntas-eliminados", checkAuthAdmin, preguntasEliminadas);
 routeAdmin.put("/recuperar-pregunta/:id", checkAuthAdmin, recuperarPregunta);
 routeAdmin.put("/editar-pregunta/:id", checkAuthAdmin, editarPregunta);
+
+routeAdmin.put("/editar-usuario-configuracion/:id", checkAuthAdmin, updateUser);
+routeAdmin.put("/editar-usuario-contrasena/:id", checkAuthAdmin, updateUserPassword);
 
 module.exports = routeAdmin;

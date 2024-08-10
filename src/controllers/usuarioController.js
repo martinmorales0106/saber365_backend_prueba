@@ -117,6 +117,10 @@ const autenticar = async (req, res) => {
       grado: usuario.grado,
       colegio: usuario.colegio,
       admin: usuario.admin,
+      nombres: usuario.nombres,
+      apellidos: usuario.apellidos,
+      departamento: usuario.departamento,
+      municipio: usuario.municipio,
       token,
     });
   } catch (error) {
@@ -243,6 +247,142 @@ const nuevoPassword = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      nombreUsuario,
+      email,
+      colegio,
+      grado,
+      nombres,
+      apellidos,
+      departamento,
+      municipio,
+      afiliado,
+    } = req.body;
+
+    const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
+
+    if (!usuarioBd) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+
+    // Verificar si ya existe un usuario con el mismo nombre de usuario
+
+    if (nombreUsuario && nombreUsuario !== usuarioBd.dataValues.nombreUsuario) {
+      const existeUsuario = await Usuario.findOne({
+        where: { nombreUsuario },
+        paranoid: false,
+      });
+
+      if (existeUsuario) {
+        if (existeUsuario.deletedAt) {
+          return res.status(400).json({
+            msg: `Nombre de usuario ya registrado pero fue eliminado el ${existeUsuario.deletedAt}. Por favor, contacta al administrador para más detalles.`,
+          });
+        } else {
+          return res.status(400).json({
+            msg: "Nombre de usuario ya registrado. Por favor, elige otro nombre de usuario.",
+          });
+        }
+      }
+    }
+
+    // Verificar si el nuevo email ya está registrado por otro usuario
+    if (email && email !== usuarioBd.dataValues.email) {
+      const emailExists = await Usuario.findOne({
+        where: { email },
+        paranoid: false,
+      });
+
+      if (emailExists) {
+        if (emailExists.deletedAt) {
+          return res.status(400).json({
+            msg: `Correo electrónico ya registrado pero fue eliminado el ${emailExists.deletedAt}. Por favor, contacta al administrador para más detalles.`,
+          });
+        } else {
+          return res.status(400).json({
+            msg: "Correo electrónico ya registrado. Por favor, utiliza otro correo electrónico.",
+          });
+        }
+      }
+    }
+
+    // Actualizar campos de perfil
+    usuarioBd.nombreUsuario = nombreUsuario || usuarioBd.nombreUsuario;
+    usuarioBd.email = email || usuarioBd.email;
+    usuarioBd.colegio = colegio ? colegio.toUpperCase() : usuarioBd.colegio;
+    usuarioBd.grado = grado || usuarioBd.grado;
+    usuarioBd.nombres = nombres || usuarioBd.nombres;
+    usuarioBd.apellidos = apellidos || usuarioBd.apellidos;
+    usuarioBd.departamento = departamento || usuarioBd.departamento;
+    usuarioBd.municipio = municipio || usuarioBd.municipio;
+    usuarioBd.afiliado = afiliado || usuarioBd.afiliado;
+
+    // Guardar los cambios
+    await usuarioBd.save();
+
+    // Crear un nuevo objeto excluyendo los campos no deseados
+    const usuarioActualizado = {
+      id: usuarioBd.id,
+      nombres: usuarioBd.nombres,
+      apellidos: usuarioBd.apellidos,
+      nombreUsuario: usuarioBd.nombreUsuario,
+      grado: usuarioBd.grado,
+      email: usuarioBd.email,
+      colegio: usuarioBd.colegio,
+      departamento: usuarioBd.departamento,
+      municipio: usuarioBd.municipio,
+      afiliado: usuarioBd.afiliado,
+      confirmado: usuarioBd.confirmado,
+      admin: usuarioBd.admin,
+    };
+
+    res
+      .status(200)
+      .json({
+        msg: "Usuario actualizado exitosamente",
+        usuario: usuarioActualizado,
+      });
+  } catch (error) {
+    console.error("Error al editar usuario:", error);
+    res.status(500).json({ msg: "Error al editar usuario" });
+  }
+};
+
+const updateUserPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password, nuevoPassword } = req.body;
+
+    const usuarioBd = await Usuario.findByPk(id, { paranoid: false });
+
+    if (!usuarioBd) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+
+    const contraseñaValida = await usuarioBd.comprobarPassword(password);
+    if (!contraseñaValida) {
+      const error = new Error("Contraseña incorrecta");
+      console.log(error);
+      return res.status(401).json({ msg: error.message });
+    }
+
+    if (nuevoPassword) {
+      const salt = await bcrypt.genSalt(10);
+      usuarioBd.password =
+        (await bcrypt.hash(nuevoPassword, salt)) || usuarioBd.password;
+    }
+
+    await usuarioBd.save();
+
+    res.status(200).json({ msg: "Contraseña actualizada exitosamente" });
+  } catch (error) {
+    console.error("Error al editar usuario:", error);
+    res.status(500).json({ msg: "Error al editar usuario" });
+  }
+};
 
 module.exports = {
   registrar,
@@ -252,4 +392,6 @@ module.exports = {
   comprobarToken,
   olvidePassword,
   nuevoPassword,
+  updateUser,
+  updateUserPassword,
 };

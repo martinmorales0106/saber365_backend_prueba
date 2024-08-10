@@ -7,7 +7,6 @@ const {
   comprobarToken,
   nuevoPassword,
   olvidePassword,
-  updateUser,
 } = require("../controllers/usuarioController");
 const checkAuth = require("../middleware/checkAuth");
 
