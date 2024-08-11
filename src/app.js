@@ -5,12 +5,11 @@ const morgan = require('morgan');
 
 require("dotenv").config();
 
-const { FRONTEND_URL } = process.env;
+const { FRONTEND_URL, FRONTEND_URL2 } = process.env;
 
 const routes = require('./routes/index.js');
 
 const server = express();
-
 
 server.name = 'API';
 
@@ -20,8 +19,14 @@ server.use(bodyParser.json({ limit: '50mb' }));
 server.use(cookieParser());
 server.use(morgan('dev'));
 server.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', `${FRONTEND_UR2L}`); // Actualiza el dominio para permitir las solicitudes desde tu cliente
-  res.header('Access-Control-Allow-Origin', `${FRONTEND_URL}`); // Actualiza el dominio para permitir las solicitudes desde tu cliente
+  // Permitir solicitudes desde múltiples dominios
+  const allowedOrigins = [FRONTEND_URL, FRONTEND_URL2];
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
@@ -30,6 +35,5 @@ server.use((req, res, next) => {
 
 // Rutas
 server.use('/', routes);
-
 
 module.exports = server;
