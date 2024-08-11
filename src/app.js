@@ -20,6 +20,7 @@ server.use(bodyParser.json({ limit: '50mb' }));
 server.use(cookieParser());
 server.use(morgan('dev'));
 server.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', `${FRONTEND_UR2L}`); // Actualiza el dominio para permitir las solicitudes desde tu cliente
   res.header('Access-Control-Allow-Origin', `${FRONTEND_URL}`); // Actualiza el dominio para permitir las solicitudes desde tu cliente
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
