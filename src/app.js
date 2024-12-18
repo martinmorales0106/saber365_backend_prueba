@@ -5,7 +5,7 @@ const morgan = require('morgan');
 
 require("dotenv").config();
 
-const { FRONTEND_URL, FRONTEND_URL2 } = process.env;
+const { FRONTEND_URL, FRONTEND_URL2, FRONTEND_URL3 } = process.env;
 
 const routes = require('./routes/index.js');
 
@@ -20,7 +20,7 @@ server.use(cookieParser());
 server.use(morgan('dev'));
 server.use((req, res, next) => {
   // Permitir solicitudes desde múltiples dominios
-  const allowedOrigins = [FRONTEND_URL, FRONTEND_URL2];
+  const allowedOrigins = [FRONTEND_URL, FRONTEND_URL2, FRONTEND_URL3];
   const origin = req.headers.origin;
 
   if (allowedOrigins.includes(origin)) {
@@ -37,3 +37,4 @@ server.use((req, res, next) => {
 server.use('/', routes);
 
 module.exports = server;
+
