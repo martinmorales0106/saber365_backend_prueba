@@ -406,10 +406,10 @@ const obtenerPosicionesUsuarioPorAreas = async (req, res) => {
     // Definir nombres de las áreas que se esperan
     const nombresAreas = [
       "Matemáticas",
-      "Lectura Critica",
+      "Lectura Crítica",
       "Sociales",
       "Naturales",
-      "Ingles",
+      "Inglés",
       "Lenguaje",
       "C. Ciudadanas",
     ];
