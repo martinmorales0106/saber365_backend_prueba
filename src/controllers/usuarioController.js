@@ -1,4 +1,4 @@
-const { Usuario } = require("../db");
+const { Usuario, ColegioData } = require("../db");
 const { Op } = require("sequelize");
 const { emailRegistro, emailOlvidePassword } = require("../helpers/email");
 const generarId = require("../helpers/generarId");
@@ -384,6 +384,20 @@ const updateUserPassword = async (req, res) => {
   }
 };
 
+// Obtener colegios de la base de datos
+const obtenerColegios = async (req, res) => {
+  try {
+    const colegios = await ColegioData.findAll();
+    if (colegios.length === 0) {
+      return res.status(404).json({ msg: "No se encontraron colegios" });
+    }
+    res.json(colegios);
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    res.status(500).json({ error: "Error al obtener usuarios" });
+  }
+};
+
 module.exports = {
   registrar,
   autenticar,
@@ -394,4 +408,5 @@ module.exports = {
   nuevoPassword,
   updateUser,
   updateUserPassword,
+  obtenerColegios,
 };

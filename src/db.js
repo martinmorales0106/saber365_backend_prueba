@@ -6,23 +6,23 @@ const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = process.env;
 const axios = require("axios");
 
 // Conectar con la base de datos de Railway
-const sequelize = new Sequelize(
-  `postgresql://postgres:lzsyvfuYsFgzstvKnJrOdBIJMgUWwwRQ@viaduct.proxy.rlwy.net:41992/railway`,
-  {
-    logging: false,
-    native: false,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false, // IMPORTANTE para Railway
-      },
-    },
-  }
-);
-// const sequelize = new Sequelize(`postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`, {
-//   logging: false, // Establecer en console.log para ver las consultas SQL sin procesar
-//   native: false, // Permite que Sequelize sepa que puede usar pg-native para obtener un ~30% más de velocidad
-// });
+// const sequelize = new Sequelize(
+//   `postgresql://postgres:lzsyvfuYsFgzstvKnJrOdBIJMgUWwwRQ@viaduct.proxy.rlwy.net:41992/railway`,
+//   {
+//     logging: false,
+//     native: false,
+//     dialectOptions: {
+//       ssl: {
+//         require: true,
+//         rejectUnauthorized: false, // IMPORTANTE para Railway
+//       },
+//     },
+//   }
+// );
+const sequelize = new Sequelize(`postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`, {
+  logging: false, // Establecer en console.log para ver las consultas SQL sin procesar
+  native: false, // Permite que Sequelize sepa que puede usar pg-native para obtener un ~30% más de velocidad
+});
 
 // Función para cargar y definir los modelos
 function defineModels() {

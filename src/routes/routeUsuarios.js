@@ -7,6 +7,7 @@ const {
   comprobarToken,
   nuevoPassword,
   olvidePassword,
+  obtenerColegios,
 } = require("../controllers/usuarioController");
 const checkAuth = require("../middleware/checkAuth");
 
@@ -17,6 +18,7 @@ routeUsuarios.post("/login", autenticar);
 routeUsuarios.get("/perfil", checkAuth, perfil);
 routeUsuarios.get("/confirmar/:token", confirmar);
 routeUsuarios.post("/olvide-password", olvidePassword);
+routeUsuarios.get("/obtener-colegios", obtenerColegios);
 
 routeUsuarios
   .route("/olvide-password/:token")
