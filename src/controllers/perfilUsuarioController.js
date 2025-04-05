@@ -576,10 +576,10 @@ const obtenerMejoresPuntajesPorArea = async (req, res) => {
 
     const areas = [
       "Matemáticas",
-      "Lectura Critica",
+      "Lectura Crítica",
       "Sociales",
       "Naturales",
-      "Ingles",
+      "Inglés",
       "Lenguaje",
       "C. Ciudadanas",
     ];
@@ -634,7 +634,7 @@ const obtenerMejoresPuntajesPorArea = async (req, res) => {
         );
 
       // Obtener los mejores puntajes por área (los dos primeros registros)
-      const mejoresPuntajesPorArea = simulacrosFiltrados.slice(0, 1);
+      const mejoresPuntajesPorArea = simulacrosFiltrados.slice(0, 5);
 
       // Obtener el mayor puntaje del usuario para el área específica
       const puntajesUsuario = simulacrosFiltrados.filter(
