@@ -33,6 +33,10 @@ server.use((req, res, next) => {
   next();
 });
 
+server.options('*', (req, res) => {
+  res.sendStatus(200);
+});
+
 // Rutas
 server.use('/', routes);
 
