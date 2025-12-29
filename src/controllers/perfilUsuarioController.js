@@ -20,23 +20,38 @@ const obtenerSimulacrosUsuario = async (req, res) => {
 
 const obtenerPreguntasUsuario = async (req, res) => {
   try {
+    // Obtenemos todas las preguntas y vemos en qué simulacros están
     const preguntas = await Pregunta.findAll({
       include: {
         model: Simulacro,
-        as: "simulacro", // Usar el alias definido en la relación
-        attributes: ["titulo"],
+        as: "simulacros", // Alias correcto de db.js
+        attributes: ["titulo", "grado"],
+        through: {
+          attributes: ["sesion_asignada", "orden"] // Datos de la tabla intermedia
+        }
       },
     });
 
-    // Mapear las preguntas para incluir el título del simulacro en lugar de id_simulacro
-    const preguntasConTitulo = preguntas.map((pregunta) => {
-      const preguntaData = pregunta.toJSON();
-      preguntaData.titulo_simulacro = preguntaData.simulacro.titulo;
-      delete preguntaData.simulacro;
-      return preguntaData;
+    // Formateamos para el frontend
+    const preguntasFormateadas = preguntas.map((p) => {
+      const data = p.toJSON();
+      // Si la pregunta está en varios simulacros, tomamos el primero o listamos todos
+      // Para mantener tu estructura anterior, tomamos el primero si existe
+      const simu = data.simulacros_donde_aparece && data.simulacros_donde_aparece[0];
+      
+      return {
+        ...data,
+        titulo_simulacro: simu ? simu.titulo : "Banco General",
+        sesion: simu ? simu.SimulacroPregunta.sesion_asignada : null, // Sacamos la sesión de la tabla intermedia
+        // Convertimos las opciones JSON a campos planos si tu frontend viejo lo necesita (opcionA, opcionB...)
+        opcionA: data.opciones.find(o => o.id === 'A')?.texto || "",
+        opcionB: data.opciones.find(o => o.id === 'B')?.texto || "",
+        opcionC: data.opciones.find(o => o.id === 'C')?.texto || "",
+        opcionD: data.opciones.find(o => o.id === 'D')?.texto || "",
+      };
     });
 
-    res.json(preguntasConTitulo);
+    res.json(preguntasFormateadas);
   } catch (error) {
     console.error("Error al obtener preguntas:", error);
     res.status(500).json({ error: "Error al obtener preguntas" });

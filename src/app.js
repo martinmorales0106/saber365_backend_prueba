@@ -14,24 +14,22 @@ const server = express();
 server.name = 'API';
 
 // Configurar CORS
-const allowedOrigins = [FRONTEND_URL, FRONTEND_URL2, FRONTEND_URL3];
+// Lista blanca de orígenes permitidos
+const whiteList = [FRONTEND_URL, FRONTEND_URL2, FRONTEND_URL3];
 
 server.use(cors({
   origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (como Postman o Server-to-Server)
+    // Permitir requests sin origen (como Postman o Apps móviles)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
+    if (whiteList.indexOf(origin) !== -1) {
+      callback(null, true);
     } else {
-      // Opcional: Imprimir en consola quién está siendo bloqueado para depurar
-      console.log("Origen bloqueado por CORS:", origin); 
-      return callback(new Error('Not allowed by CORS'));
+      console.log(`Origen bloqueado: ${origin}`);
+      callback(new Error('No permitido por CORS'));
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  credentials: true // Importante para cookies/sesiones
 }));
 
 // Otros middlewares

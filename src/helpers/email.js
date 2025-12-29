@@ -2,20 +2,19 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 const { MAIL_USER, MAIL_PASS, FRONTEND_URL } = process.env;
 
-
 const emailRegistro = async (datos) => {
   const { email, nombreUsuario, token } = datos;
 
   const transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
-      user: MAIL_USER, // Reemplaza con tu dirección de correo electrónico de Gmail
-      pass: MAIL_PASS, // Reemplaza con la contraseña de aplicación generada
+      user: MAIL_USER,
+      pass: MAIL_PASS,
     },
   });
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: MAIL_USER,
       to: email,
       subject: "Saber365 - Comprueba tu cuenta",
@@ -42,10 +41,11 @@ const emailRegistro = async (datos) => {
         </div>
       `,
     });
+    console.log("Mensaje enviado: %s", info.messageId);
   } catch (error) {
     console.log(error);
-    console.error("Error al registrar usuario:", error);
-    return res.status(500).json({ mensaje: "Error interno del servidor" });
+    console.error("Error al enviar email de registro:", error);
+    // NO usamos res.status aquí. Simplemente dejamos el error en log.
   }
 };
 
@@ -55,8 +55,8 @@ const emailOlvidePassword = async (datos) => {
   const transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
-      user: MAIL_USER, // Reemplaza con tu dirección de correo electrónico de Gmail
-      pass: MAIL_PASS, // Reemplaza con la contraseña de aplicación generada
+      user: MAIL_USER,
+      pass: MAIL_PASS,
     },
   });
 
@@ -90,8 +90,7 @@ const emailOlvidePassword = async (datos) => {
     });
   } catch (error) {
     console.log(error);
-    console.error("Error al recuperar el usuario:", error);
-    return res.status(500).json({ mensaje: "Error interno del servidor" });
+    console.error("Error al enviar email de recuperación:", error);
   }
 };
 

@@ -1,17 +1,14 @@
 const checkAuth = require("./checkAuth");
 
 const checkAuthAdmin = async (req, res, next) => {
-  // Reutiliza el middleware checkAuth para verificar el token del usuario
+  // Ejecuta primero la verificación de token normal
   checkAuth(req, res, async () => {
-    // Ahora, verifica si el usuario es administrador
+    // Si checkAuth pasó (llamó a next), req.usuario ya existe
     if (req.usuario && req.usuario.admin === true) {
-      // El usuario es un administrador, continúa con la solicitud
       return next();
     } else {
-      // El usuario no es administrador
-      return res
-        .status(403)
-        .json({ msg: "No tienes permisos de administrador" });
+      // Usamos 403 Forbidden (Entendí quién eres, pero no tienes permiso)
+      return res.status(403).json({ msg: "Acceso denegado: Se requieren permisos de administrador." });
     }
   });
 };

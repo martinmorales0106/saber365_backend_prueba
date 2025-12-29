@@ -1,14 +1,27 @@
-const { Pregunta, Simulacro } = require("../db");
+const { Pregunta, Simulacro, SimulacroPregunta } = require("../db");
 const { Op } = require("sequelize");
 
-const crearPregunta = async (req, res, next) => {
+// --- CREAR PREGUNTA (Adaptado a JSONB y Relaciones) ---
+const crearPregunta = async (req, res) => {
   try {
     const {
+      // Campos académicos
+      grado,
+      area,
+      nivel_dificultad,
+      competencia,
+      componente,
+      tema,
+      sub_tema,
+      
+      // Contenido visual/texto
       contexto,
       imagen,
       titulo_texto,
       pie_texto,
-      pregunta,
+      pregunta, // En el frontend se llama 'pregunta', en DB 'texto_pregunta'
+      
+      // Opciones (Frontend envía A, B, C...)
       opcionA,
       opcionB,
       opcionC,
@@ -17,113 +30,152 @@ const crearPregunta = async (req, res, next) => {
       opcionF,
       opcionG,
       opcionH,
-      respuesta_correcta,
+      respuesta_correcta, // Ej: "A" o "B"
+
+      // Retroalimentación
       afirmacion,
       evidencia,
       justificacion,
       img_Justificacion,
-      sesion,
-      area,
-      grado,
-      competencia,
-      componente,
-      nivel,
-      tema,
-      sub_tema,
       opcion_invalida,
       img_opcion_invalida,
       enlace,
-      simulacro,
-      numero,
+
+      // Datos de asignación (Lo que antes iba directo en la tabla)
+      simulacro, // Título del simulacro
+      sesion,    // "1" o "2" (Ahora va a la tabla intermedia)
+      numero,    // Orden de la pregunta (Ahora va a la tabla intermedia)
+      
+      // Flags
+      es_premium
     } = req.body;
 
-    // Busca el simulacro por su título
-    const simulacroEncontrado = await Simulacro.findOne({
-      where: { titulo: simulacro },
-      attributes: ["id"],
-    });
+    // 1. CONSTRUCCIÓN DEL JSON DE OPCIONES
+    // Convertimos las columnas sueltas en un array estructurado
+    let opcionesArray = [];
+    
+    // Función auxiliar para agregar opciones
+    const agregarOpcion = (letra, texto) => {
+      if (texto) {
+        opcionesArray.push({
+          id: letra,
+          texto: texto,
+          esCorrecta: respuesta_correcta === letra // Marcamos true si es la correcta
+        });
+      }
+    };
 
-    let simulacroId;
+    agregarOpcion("A", opcionA);
+    agregarOpcion("B", opcionB);
+    agregarOpcion("C", opcionC);
+    agregarOpcion("D", opcionD);
+    agregarOpcion("E", opcionE);
+    agregarOpcion("F", opcionF);
+    agregarOpcion("G", opcionG);
+    agregarOpcion("H", opcionH);
 
-    if (simulacroEncontrado) {
-      simulacroId = simulacroEncontrado.id;
-    } else {
-      // Maneja el caso donde el simulacro no se encuentra
-      return res.status(404).json({
-        msg: "Simulacro no encontrado. Verifica el título del simulacro.",
-      });
-    }
-
-    // Crear una nueva pregunta
+    // 2. CREAR LA PREGUNTA EN EL BANCO
     const nuevaPregunta = await Pregunta.create({
-      numero,
-      contexto,
-      imagen,
+      grado,
+      area,
+      nivel_dificultad: nivel_dificultad || 1,
       titulo_texto,
+      contexto,
       pie_texto,
-      pregunta,
-      opcionA,
-      opcionB,
-      opcionC,
-      opcionD,
-      opcionE,
-      opcionF,
-      opcionG,
-      opcionH,
-      respuesta_correcta,
+      imagen,
+      texto_pregunta: pregunta, // Mapeo clave: req.body.pregunta -> DB.texto_pregunta
+      opciones: opcionesArray,   // Guardamos el JSON procesado
       afirmacion,
       evidencia,
       justificacion,
       img_Justificacion,
-      sesion,
-      area,
-      grado,
-      competencia,
-      componente,
-      nivel,
-      tema,
-      sub_tema,
       opcion_invalida,
       img_opcion_invalida,
+      competencia,
+      componente,
+      tema,
+      sub_tema,
       enlace,
-      id_simulacro: Number(simulacroId),
+      es_publica: !es_premium, // Si es premium, no es pública
+      es_premium: es_premium || false,
     });
 
+    // 3. ASOCIAR AL SIMULACRO (Si se envió un título de simulacro)
+    if (simulacro) {
+      const simulacroEncontrado = await Simulacro.findOne({
+        where: { titulo: simulacro },
+      });
+
+      if (simulacroEncontrado) {
+        // Usamos la tabla intermedia (SimulacroPregunta) para guardar sesión y orden
+        // Nota: Asegúrate de que en db.js la relación sea Simulacro.belongsToMany
+        await simulacroEncontrado.addPregunta(nuevaPregunta, {
+          through: {
+            sesion_asignada: parseInt(sesion) || 1, 
+            orden: parseInt(numero) || 0,
+            valor_pregunta: 2 // Valor por defecto
+          }
+        });
+      }
+    }
+
     return res.status(201).json({
-      msg: "Pregunta creada correctamente.",
+      msg: "Pregunta creada y añadida al banco correctamente.",
       pregunta: nuevaPregunta,
     });
+
   } catch (error) {
     console.error("Error al crear la pregunta:", error);
     res.status(500).json({ mensaje: "Hubo un error al procesar la solicitud" });
   }
 };
 
+// --- OBTENER PREGUNTAS ---
 const obtenerPregunta = async (req, res) => {
   try {
+    // Buscamos preguntas e incluimos en qué simulacros aparecen
     const preguntas = await Pregunta.findAll({
       include: {
         model: Simulacro,
-        as: "simulacro", // Usar el alias definido en la relación
-        attributes: ["titulo"],
+        as: "simulacros", // Asegúrate que este alias coincida con tu db.js (belongsToMany)
+        attributes: ["titulo", "grado"],
+        through: {
+          attributes: ["sesion_asignada", "orden"] // Traemos datos de la tabla intermedia
+        }
       },
+      order: [['id', 'DESC']] // Las más nuevas primero
     });
 
-    // Mapear las preguntas para incluir el título del simulacro en lugar de id_simulacro
-    const preguntasConTitulo = preguntas.map((pregunta) => {
-      const preguntaData = pregunta.toJSON();
-      preguntaData.titulo_simulacro = preguntaData.simulacro.titulo;
-      delete preguntaData.simulacro;
-      return preguntaData;
+    // Mapeo opcional: Si tu frontend viejo espera "opcionA", "opcionB" sueltas,
+    // puedes transformarlas aquí antes de responder.
+    const preguntasFormateadas = preguntas.map(p => {
+      const data = p.toJSON();
+      
+      // Extraemos la respuesta correcta del JSON para enviarla fácil al front
+      const opcionCorrectaObj = data.opciones.find(op => op.esCorrecta === true);
+      
+      return {
+        ...data,
+        pregunta: data.texto_pregunta, // Devolvemos nombre compatible con front
+        respuesta_correcta: opcionCorrectaObj ? opcionCorrectaObj.id : null,
+        // Si necesitas compatibilidad con campos viejos:
+        opcionA: data.opciones.find(o => o.id === 'A')?.texto || "",
+        opcionB: data.opciones.find(o => o.id === 'B')?.texto || "",
+        opcionC: data.opciones.find(o => o.id === 'C')?.texto || "",
+        opcionD: data.opciones.find(o => o.id === 'D')?.texto || "",
+        // Incluimos info del primer simulacro asociado (para compatibilidad visual)
+        titulo_simulacro: data.simulacros.length > 0 ? data.simulacros[0].titulo : "Banco General"
+      };
     });
 
-    res.json(preguntasConTitulo);
+    res.json(preguntasFormateadas);
   } catch (error) {
     console.error("Error al obtener preguntas:", error);
     res.status(500).json({ error: "Error al obtener preguntas" });
   }
 };
 
+// --- ELIMINAR PREGUNTA ---
 const eliminarPregunta = async (req, res) => {
   const { id } = req.params;
 
@@ -131,171 +183,130 @@ const eliminarPregunta = async (req, res) => {
     const pregunta = await Pregunta.findByPk(id);
 
     if (!pregunta) {
-      return res.status(404).json({ msg: "Pregunta no encontrado" });
+      return res.status(404).json({ msg: "Pregunta no encontrada" });
     }
 
-    // Aquí eliminamos el simulacro
     await pregunta.destroy();
 
-    res
-      .status(200)
-      .json({ msg: "Pregunta eliminada con éxito", pregunta: pregunta });
+    res.status(200).json({ msg: "Pregunta eliminada con éxito", pregunta });
   } catch (error) {
     console.error("Error al eliminar pregunta:", error);
     res.status(500).json({ error: "Error al eliminar pregunta" });
   }
 };
 
-const preguntasEliminadas = async (req, res) => {
-  try {
-    const preguntasEliminadas = await Pregunta.findAll({
-      paranoid: false, // Esto ignorará la lógica de eliminación suave
-      where: {
-        deletedAt: {
-          [Op.not]: null, // Filtra usuarios que tienen el campo deletedAt no nulo
-        },
-      },
-    });
-
-    res.json(preguntasEliminadas);
-  } catch (error) {
-    console.error("Error al obtener preguntas eliminadas:", error);
-    res.status(500).json({ error: "Error al obtener preguntas eliminadas" });
-  }
-};
-
+// --- RECUPERAR PREGUNTA ---
 const recuperarPregunta = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const pregunta = await Pregunta.findByPk(id, {
-      paranoid: false, // Esto ignorará la lógica de eliminación suave (soft delete)
-    });
+    const pregunta = await Pregunta.findByPk(id, { paranoid: false });
 
-    if (!pregunta) {
-      return res.status(404).json({ error: "Pregunta no encontrada" });
-    }
-
+    if (!pregunta) return res.status(404).json({ error: "Pregunta no encontrada" });
+    
     if (!pregunta.deletedAt) {
-      return res
-        .status(400)
-        .json({ error: "El pregunta no está marcado como eliminado" });
+      return res.status(400).json({ error: "La pregunta no está eliminada" });
     }
 
-    // Aquí recuperamos el usuario cambiando el valor de "deletedAt" a null
     await pregunta.restore();
-
-    res.json({ msg: "Pregunta recuperado con éxito", pregunta });
+    res.json({ msg: "Pregunta recuperada con éxito", pregunta });
   } catch (error) {
     console.error("Error al recuperar pregunta:", error);
     res.status(500).json({ error: "Error al recuperar pregunta" });
   }
 };
 
+// --- PREGUNTAS ELIMINADAS ---
+const preguntasEliminadas = async (req, res) => {
+  try {
+    const eliminadas = await Pregunta.findAll({
+      paranoid: false,
+      where: { deletedAt: { [Op.not]: null } },
+    });
+    res.json(eliminadas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener eliminadas" });
+  }
+};
+
+// --- EDITAR PREGUNTA ---
 const editarPregunta = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      contexto,
-      imagen,
-      titulo_texto,
-      pie_texto,
-      pregunta,
-      opcionA,
-      opcionB,
-      opcionC,
-      opcionD,
-      opcionE,
-      opcionF,
-      opcionG,
-      opcionH,
-      respuesta_correcta,
-      afirmacion,
-      evidencia,
-      justificacion,
-      img_Justificacion,
-      sesion,
-      area,
-      grado,
-      competencia,
-      componente,
-      nivel,
-      tema,
-      sub_tema,
-      opcion_invalida,
-      img_opcion_invalida,
-      enlace,
-      numero,
-      simulacro,
+      grado, area, pregunta, titulo_texto, contexto,
+      opcionA, opcionB, opcionC, opcionD,
+      respuesta_correcta, justificacion, sesion, simulacro,
+      nivel_dificultad
     } = req.body;
 
-    const preguntaBd = await Pregunta.findByPk(id, { paranoid: false });
+    const preguntaBd = await Pregunta.findByPk(id);
+    if (!preguntaBd) return res.status(404).json({ msg: "Pregunta no encontrada" });
 
-    if (!preguntaBd) {
-      return res.status(404).json({ msg: "Pregunta no encontrado" });
+    // 1. Actualizar campos planos
+    if (grado) preguntaBd.grado = grado;
+    if (area) preguntaBd.area = area;
+    if (nivel_dificultad) preguntaBd.nivel_dificultad = nivel_dificultad;
+    if (pregunta) preguntaBd.texto_pregunta = pregunta;
+    if (titulo_texto) preguntaBd.titulo_texto = titulo_texto;
+    if (contexto) preguntaBd.contexto = contexto;
+    if (justificacion) preguntaBd.justificacion = justificacion;
+
+    // 2. Lógica para actualizar JSON de opciones
+    // Reconstruimos las opciones basándonos en lo existente + lo nuevo
+    let nuevasOpciones = preguntaBd.opciones ? [...preguntaBd.opciones] : [];
+    
+    const actualizarOpcionJSON = (letra, nuevoTexto) => {
+       const index = nuevasOpciones.findIndex(o => o.id === letra);
+       if (index >= 0) {
+           if (nuevoTexto) nuevasOpciones[index].texto = nuevoTexto;
+           // Actualizar flag de correcta
+           nuevasOpciones[index].esCorrecta = (respuesta_correcta === letra);
+       } else if (nuevoTexto) {
+           nuevasOpciones.push({ id: letra, texto: nuevoTexto, esCorrecta: (respuesta_correcta === letra) });
+       }
+    };
+
+    // Si recibimos nuevas opciones, las procesamos
+    if (opcionA || opcionB || opcionC || opcionD || respuesta_correcta) {
+        actualizarOpcionJSON("A", opcionA);
+        actualizarOpcionJSON("B", opcionB);
+        actualizarOpcionJSON("C", opcionC);
+        actualizarOpcionJSON("D", opcionD);
+        // ... repetir para E, F, G, H si es necesario
+        preguntaBd.opciones = nuevasOpciones; // Guardamos el array actualizado
     }
-
-    // Busca el simulacro por su título
-    const simulacroEncontrado = await Simulacro.findOne({
-      where: { titulo: simulacro },
-      attributes: ["id"],
-    });
-
-    let simulacroId;
-
-    if (simulacroEncontrado) {
-      simulacroId = simulacroEncontrado.id;
-    } else {
-      // Maneja el caso donde el simulacro no se encuentra
-      return res.status(404).json({
-        msg: "Simulacro no encontrado. Verifica el título del simulacro.",
-      });
-    }
-
-    // Actualizar campos de perfil
-    preguntaBd.numero = numero || preguntaBd.numero;
-    preguntaBd.contexto = contexto || preguntaBd.contexto;
-    preguntaBd.imagen = imagen || preguntaBd.imagen;
-    preguntaBd.pregunta = pregunta || preguntaBd.pregunta;
-    preguntaBd.titulo_texto = titulo_texto || preguntaBd.titulo_texto;
-    preguntaBd.pie_texto = pie_texto || preguntaBd.pie_texto;
-    preguntaBd.opcionA = opcionA || preguntaBd.opcionA;
-    preguntaBd.opcionB = opcionB || preguntaBd.opcionB;
-    preguntaBd.opcionC = opcionC || preguntaBd.opcionC;
-    preguntaBd.opcionD = opcionD || preguntaBd.opcionD;
-    preguntaBd.opcionE = opcionE || preguntaBd.opcionE;
-    preguntaBd.opcionF = opcionF || preguntaBd.opcionF;
-    preguntaBd.opcionG = opcionG || preguntaBd.opcionG;
-    preguntaBd.opcionH = opcionH || preguntaBd.opcionH;
-    preguntaBd.respuesta_correcta =
-      respuesta_correcta || preguntaBd.respuesta_correcta;
-    preguntaBd.afirmacion = afirmacion || preguntaBd.afirmacion;
-    preguntaBd.evidencia = evidencia || preguntaBd.evidencia;
-    preguntaBd.justificacion = justificacion || preguntaBd.justificacion;
-    preguntaBd.img_Justificacion =
-      img_Justificacion || preguntaBd.img_Justificacion;
-    preguntaBd.sesion = sesion || preguntaBd.sesion;
-    preguntaBd.area = area || preguntaBd.area;
-    preguntaBd.grado = grado || preguntaBd.grado;
-    preguntaBd.competencia = competencia || preguntaBd.competencia;
-    preguntaBd.componente = componente || preguntaBd.componente;
-    preguntaBd.nivel = nivel || preguntaBd.nivel;
-    preguntaBd.tema = tema || preguntaBd.tema;
-    preguntaBd.sub_tema = sub_tema || preguntaBd.sub_tema;
-    preguntaBd.opcion_invalida = opcion_invalida || preguntaBd.opcion_invalida;
-    preguntaBd.img_opcion_invalida =
-      img_opcion_invalida || preguntaBd.img_opcion_invalida;
-    preguntaBd.enlace = enlace || preguntaBd.enlace;
-    preguntaBd.id_simulacro = Number(simulacroId) || preguntaBd.id_simulacro;
 
     await preguntaBd.save();
 
-    res.status(200).json({
-      msg: "Pregunta actualizada exitosamente",
-      pregunta: preguntaBd,
-    });
+    // 3. Gestionar cambio de asignación a Simulacro (Tabla Intermedia)
+    if (simulacro) {
+       const simulacroFound = await Simulacro.findOne({ where: { titulo: simulacro } });
+       if (simulacroFound) {
+          // Buscamos si ya existe la relación
+          const relacion = await SimulacroPregunta.findOne({
+             where: { id_simulacro: simulacroFound.id, id_pregunta: preguntaBd.id }
+          });
+          
+          if (relacion) {
+             // Si existe, actualizamos sesión
+             if (sesion) {
+                 relacion.sesion_asignada = parseInt(sesion);
+                 await relacion.save();
+             }
+          } else {
+             // Si no existe, creamos la relación
+             await simulacroFound.addPregunta(preguntaBd, { 
+                 through: { sesion_asignada: parseInt(sesion) || 1 } 
+             });
+          }
+       }
+    }
+
+    res.status(200).json({ msg: "Pregunta actualizada", pregunta: preguntaBd });
   } catch (error) {
-    console.error("Error al editar pregunta:", error);
+    console.error("Error al editar:", error);
     res.status(500).json({ msg: "Error al editar pregunta" });
   }
 };

@@ -21,7 +21,7 @@ const {
 } = require("../controllers/simulacroController");
 
 const {
-  crearPregunta,
+  crearPregunta, // Esta será ahora la función MAESTRA para todo
   obtenerPregunta,
   eliminarPregunta,
   preguntasEliminadas,
@@ -30,10 +30,12 @@ const {
 } = require("../controllers/preguntaController");
 
 const { updateUser, updateUserPassword } = require("../controllers/usuarioController");
-const { crearPreguntaNivel, obtenerPreguntasNivel } = require("../controllers/preguntaNivelController");
+
+// NOTA: Eliminamos referencias a crearPreguntaNivel porque ya no existen.
 
 const routeAdmin = Router();
 
+// --- Rutas de Usuarios ---
 routeAdmin.post("/crear-usuario", checkAuthAdmin, crearUsuario);
 routeAdmin.get("/obtener-usuarios", checkAuthAdmin, obtenerUsuarios);
 routeAdmin.delete("/eliminar-usuario/:id", checkAuthAdmin, eliminarUsuario);
@@ -41,6 +43,7 @@ routeAdmin.get("/usuarios-eliminados", checkAuthAdmin, usuariosEliminados);
 routeAdmin.put("/recuperar-usuario/:id", checkAuthAdmin, recuperarUsuario);
 routeAdmin.put("/editar-usuario/:id", checkAuthAdmin, editarUsuario);
 
+// --- Rutas de Simulacros ---
 routeAdmin.post("/crear-simulacro", checkAuthAdmin, crearSimulacro);
 routeAdmin.get("/obtener-simulacros", checkAuthAdmin, obtenerSimulacro);
 routeAdmin.delete("/eliminar-simulacro/:id", checkAuthAdmin, eliminarSimulacro);
@@ -48,6 +51,7 @@ routeAdmin.get("/simulacros-eliminados", checkAuthAdmin, simulacrosEliminados);
 routeAdmin.put("/recuperar-simulacro/:id", checkAuthAdmin, recuperarSimulacro);
 routeAdmin.put("/editar-simulacro/:id", checkAuthAdmin, editarSimulacro);
 
+// --- Rutas de Preguntas (El Banco Central) ---
 routeAdmin.post("/crear-pregunta", checkAuthAdmin, crearPregunta);
 routeAdmin.get("/obtener-preguntas", checkAuthAdmin, obtenerPregunta);
 routeAdmin.delete("/eliminar-pregunta/:id", checkAuthAdmin, eliminarPregunta);
@@ -55,10 +59,8 @@ routeAdmin.get("/preguntas-eliminados", checkAuthAdmin, preguntasEliminadas);
 routeAdmin.put("/recuperar-pregunta/:id", checkAuthAdmin, recuperarPregunta);
 routeAdmin.put("/editar-pregunta/:id", checkAuthAdmin, editarPregunta);
 
+// --- Rutas de Configuración Usuario Admin ---
 routeAdmin.put("/editar-usuario-configuracion/:id", checkAuthAdmin, updateUser);
 routeAdmin.put("/editar-usuario-contrasena/:id", checkAuthAdmin, updateUserPassword);
-
-routeAdmin.post("/crear-pregunta-nivel", checkAuthAdmin, crearPreguntaNivel);
-routeAdmin.get("/obtener-preguntas-nivel", checkAuth, obtenerPreguntasNivel);
 
 module.exports = routeAdmin;

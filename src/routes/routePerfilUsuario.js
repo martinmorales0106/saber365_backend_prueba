@@ -94,7 +94,7 @@ routePerfilUsuario.get(
 routePerfilUsuario.put("/editar-usuario/:id", checkAuth, updateUser);
 routePerfilUsuario.put("/editar-usuario-contrasena/:id", checkAuth, updateUserPassword);
 
-routePerfilUsuario.get("/progreso/:usuarioId", obtenerDesafioUsuario);
-routePerfilUsuario.put("/progreso/:usuarioId", actualizarDesafioUsuario);
+routePerfilUsuario.get("/progreso/:usuarioId", checkAuth, obtenerDesafioUsuario);
+routePerfilUsuario.put("/progreso/:usuarioId", checkAuth, actualizarDesafioUsuario);
 
 module.exports = routePerfilUsuario;

@@ -56,23 +56,28 @@ const {
   SimulacroRealizado,
   SimulacroFinalizado,
   ColegioData,
-  PreguntaNivel,
   DesafioUsuario,
+  SimulacroPregunta,
 } = sequelize.models;
 
 // Relaciones entre modelos
 
-Simulacro.hasMany(Pregunta, {
-  foreignKey: "id_simulacro", // Clave foránea en Pregunta
-  sourceKey: "id", // Clave primaria en Simulacro
-  as: "preguntas", // Alias para la relación
+// Una Pregunta puede estar en muchos Simulacros
+
+Pregunta.belongsToMany(Simulacro, {
+  through: SimulacroPregunta,
+  foreignKey: "id_pregunta",
+  otherKey: "id_simulacro",
+  as: "simulacros",
 });
 
-Pregunta.belongsTo(Simulacro, {
-  foreignKey: "id_simulacro", // Clave foránea en Pregunta
-  targetKey: "id", // Clave primaria en Simulacro
-  as: "simulacro", // Alias para la relación
+Simulacro.belongsToMany(Pregunta, {
+  through: SimulacroPregunta,
+  foreignKey: "id_simulacro",
+  otherKey: "id_pregunta",
+  as: "preguntas", // Al traer un simulacro, incluye sus preguntas
 });
+
 
 Usuario.hasMany(SimulacroRealizado, {
   foreignKey: "id_usuario",
@@ -125,20 +130,6 @@ SimulacroFinalizado.belongsTo(Simulacro, {
 });
 
 // Relaciones entre Usuario y PreguntaNivel
-
-Usuario.belongsToMany(PreguntaNivel, {
-  through: "UsuarioPreguntaNivel", // Nombre de la tabla intermedia
-  foreignKey: "usuarioId",          // Clave foránea que apunta a Usuario
-  otherKey: "preguntaNivelId",      // Clave foránea que apunta a PreguntaNivel
-  as: "preguntasNivelUsuario",             // Alias para acceder a las preguntas del usuario
-});
-
-PreguntaNivel.belongsToMany(Usuario, {
-  through: "UsuarioPreguntaNivel",  // Nombre de la tabla intermedia
-  foreignKey: "preguntaNivelId",     // Clave foránea que apunta a PreguntaNivel
-  otherKey: "usuarioId",             // Clave foránea que apunta a Usuario
-  as: "usuariosPreguntaNivel",                   // Alias para acceder a los usuarios de una pregunta
-});
 
 // Usuario tiene muchos DesafioUsuario
 Usuario.hasMany(DesafioUsuario, {
@@ -205,7 +196,6 @@ module.exports = {
   SimulacroRealizado,
   SimulacroFinalizado,
   ColegioData,
-  PreguntaNivel,
   DesafioUsuario,
   conn: sequelize,
 };

@@ -9,9 +9,17 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      numero: {
-        type: DataTypes.INTEGER,
+      grado: {
+        type: DataTypes.STRING, // "3", "5", "11"
         allowNull: false,
+      },
+      area: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      nivel_dificultad: {
+        type: DataTypes.INTEGER, // 1 al 10, o 1=Bajo, 2=Medio, 3=Alto
+        defaultValue: 1,
       },
       titulo_texto: {
         type: DataTypes.TEXT,
@@ -25,38 +33,12 @@ module.exports = (sequelize) => {
       imagen: {
         type: DataTypes.STRING,
       },
-      pregunta: {
+      texto_pregunta: {
         type: DataTypes.TEXT,
-      },
-      opcionA: {
-        type: DataTypes.STRING,
         allowNull: false,
       },
-      opcionB: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      opcionC: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      opcionD: {
-        type: DataTypes.STRING,
-      },
-      opcionE: {
-        type: DataTypes.STRING,
-      },
-      opcionF: {
-        type: DataTypes.STRING,
-      },
-      opcionG: {
-        type: DataTypes.STRING,
-      },
-      opcionH: {
-        type: DataTypes.STRING,
-      },
-      respuesta_correcta: {
-        type: DataTypes.STRING,
+      opciones: {
+        type: DataTypes.JSONB,
         allowNull: false,
       },
       afirmacion: {
@@ -77,25 +59,10 @@ module.exports = (sequelize) => {
       img_opcion_invalida: {
         type: DataTypes.STRING,
       },
-      sesion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      area: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      grado: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
       competencia: {
         type: DataTypes.STRING,
       },
       componente: {
-        type: DataTypes.STRING,
-      },
-      nivel: {
         type: DataTypes.STRING,
       },
       tema: {
@@ -107,6 +74,9 @@ module.exports = (sequelize) => {
       enlace: {
         type: DataTypes.STRING,
       },
+      // Flags para saber dónde se puede usar
+      es_publica: { type: DataTypes.BOOLEAN, defaultValue: true }, // Para desafíos gratuitos
+      es_premium: { type: DataTypes.BOOLEAN, defaultValue: false }, // Solo para simulacros pagos
     },
     { timestamps: true, paranoid: true }
   );

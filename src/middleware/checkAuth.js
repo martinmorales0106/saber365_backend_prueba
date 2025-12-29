@@ -3,12 +3,14 @@ const { Usuario } = require("../db");
 
 const checkAuth = async (req, res, next) => {
   let token;
+  
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
       token = req.headers.authorization.split(" ")[1];
+      
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       req.usuario = await Usuario.findByPk(decoded.id, {
@@ -26,15 +28,18 @@ const checkAuth = async (req, res, next) => {
       if (req.usuario) {
         return next();
       } else {
-        return res.status(200).json({ msg: "Usuario no encontrado" });
+        // CORRECCIÓN: Usamos 404 o 401, nunca 200 para un error
+        return res.status(404).json({ msg: "Usuario no encontrado en base de datos" });
       }
     } catch (error) {
-      return res.status(204).json({ msg: "Token no válido" });
+      // CORRECCIÓN IMPORTANTE: Cambiado de 204 a 403 (Forbidden) o 401 (Unauthorized)
+      // 204 NO permite enviar un mensaje JSON.
+      return res.status(401).json({ msg: "Tu sesión ha expirado, por favor inicia sesión nuevamente." });
     }
   }
 
-  return res.status(401).json({ msg: "Token no proporcionado" });
+  // Si no hay token
+  return res.status(401).json({ msg: "Token no proporcionado, acceso denegado." });
 };
 
 module.exports = checkAuth;
-
