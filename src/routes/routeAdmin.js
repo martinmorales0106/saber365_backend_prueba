@@ -9,6 +9,7 @@ const {
 } = require("../controllers/adminController");
 
 const checkAuthAdmin = require("../middleware/checkAuthAdmin");
+const checkAuth = require("../middleware/checkAuth");
 
 const {
   crearSimulacro,
@@ -29,6 +30,7 @@ const {
 } = require("../controllers/preguntaController");
 
 const { updateUser, updateUserPassword } = require("../controllers/usuarioController");
+const { crearPreguntaNivel, obtenerPreguntasNivel } = require("../controllers/preguntaNivelController");
 
 const routeAdmin = Router();
 
@@ -55,5 +57,8 @@ routeAdmin.put("/editar-pregunta/:id", checkAuthAdmin, editarPregunta);
 
 routeAdmin.put("/editar-usuario-configuracion/:id", checkAuthAdmin, updateUser);
 routeAdmin.put("/editar-usuario-contrasena/:id", checkAuthAdmin, updateUserPassword);
+
+routeAdmin.post("/crear-pregunta-nivel", checkAuthAdmin, crearPreguntaNivel);
+routeAdmin.get("/obtener-preguntas-nivel", checkAuth, obtenerPreguntasNivel);
 
 module.exports = routeAdmin;

@@ -18,15 +18,20 @@ const allowedOrigins = [FRONTEND_URL, FRONTEND_URL2, FRONTEND_URL3];
 
 server.use(cors({
   origin: function (origin, callback) {
-    // Permitir solicitudes sin origin (como curl o postman)
+    // Permitir solicitudes sin origen (como Postman o Server-to-Server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
       return callback(null, true);
     } else {
+      // Opcional: Imprimir en consola quién está siendo bloqueado para depurar
+      console.log("Origen bloqueado por CORS:", origin); 
       return callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true, // Permitir enviar cookies y auth headers
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Otros middlewares

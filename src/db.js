@@ -6,19 +6,27 @@ const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = process.env;
 const axios = require("axios");
 
 // Conectar con la base de datos de Railway
-const sequelize = new Sequelize(
-  `postgresql://postgres:lzsyvfuYsFgzstvKnJrOdBIJMgUWwwRQ@viaduct.proxy.rlwy.net:41992/railway`,
-  {
-    logging: false,
-    native: false,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false, // IMPORTANTE para Railway
-      },
+const DATABASE_URL = `postgresql://postgres:lzsyvfuYsFgzstvKnJrOdBIJMgUWwwRQ@viaduct.proxy.rlwy.net:41992/railway`;
+
+const sequelize = new Sequelize(DATABASE_URL, {
+  logging: false, 
+  native: false, 
+  dialect: 'postgres', // Importante especificar el dialecto
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false // CRUCIAL para conectar a Railway desde fuera
     },
+    keepAlive: true, // Ayuda a evitar cortes de conexión intermitentes
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
   }
-);
+});
+
 // const sequelize = new Sequelize(`postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`, {
 //   logging: false, // Establecer en console.log para ver las consultas SQL sin procesar
 //   native: false, // Permite que Sequelize sepa que puede usar pg-native para obtener un ~30% más de velocidad
@@ -48,6 +56,8 @@ const {
   SimulacroRealizado,
   SimulacroFinalizado,
   ColegioData,
+  PreguntaNivel,
+  DesafioUsuario,
 } = sequelize.models;
 
 // Relaciones entre modelos
@@ -114,6 +124,37 @@ SimulacroFinalizado.belongsTo(Simulacro, {
   as: "simulacro",
 });
 
+// Relaciones entre Usuario y PreguntaNivel
+
+Usuario.belongsToMany(PreguntaNivel, {
+  through: "UsuarioPreguntaNivel", // Nombre de la tabla intermedia
+  foreignKey: "usuarioId",          // Clave foránea que apunta a Usuario
+  otherKey: "preguntaNivelId",      // Clave foránea que apunta a PreguntaNivel
+  as: "preguntasNivelUsuario",             // Alias para acceder a las preguntas del usuario
+});
+
+PreguntaNivel.belongsToMany(Usuario, {
+  through: "UsuarioPreguntaNivel",  // Nombre de la tabla intermedia
+  foreignKey: "preguntaNivelId",     // Clave foránea que apunta a PreguntaNivel
+  otherKey: "usuarioId",             // Clave foránea que apunta a Usuario
+  as: "usuariosPreguntaNivel",                   // Alias para acceder a los usuarios de una pregunta
+});
+
+// Usuario tiene muchos DesafioUsuario
+Usuario.hasMany(DesafioUsuario, {
+  foreignKey: "usuarioId",  // Clave foránea en DesafioUsuario
+  sourceKey: "id",          // Clave primaria en Usuario
+  as: "progresos",          // Alias para acceder desde Usuario a sus progresos
+});
+
+// DesafioUsuario pertenece a un Usuario
+DesafioUsuario.belongsTo(Usuario, {
+  foreignKey: "usuarioId",  // Clave foránea que apunta a Usuario
+  targetKey: "id",          // Clave primaria de Usuario
+  as: "usuario",            // Alias para acceder al usuario desde DesafioUsuario
+});
+
+
 // Insertar colegios en la base de datos
 // const apiUrl = "https://www.datos.gov.co/resource/cfw5-qzt5.json";
 // const appToken = "0mOA5CbJo9E2GsZwIAMYiqDA0";
@@ -164,5 +205,7 @@ module.exports = {
   SimulacroRealizado,
   SimulacroFinalizado,
   ColegioData,
+  PreguntaNivel,
+  DesafioUsuario,
   conn: sequelize,
 };

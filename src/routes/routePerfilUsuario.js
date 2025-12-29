@@ -17,6 +17,7 @@ const {
   updateUser,
   updateUserPassword,
 } = require("../controllers/perfilUsuarioController");
+const { obtenerDesafioUsuario, actualizarDesafioUsuario } = require("../controllers/desafioUsuarioController");
 
 const routePerfilUsuario = Router();
 
@@ -92,5 +93,8 @@ routePerfilUsuario.get(
 
 routePerfilUsuario.put("/editar-usuario/:id", checkAuth, updateUser);
 routePerfilUsuario.put("/editar-usuario-contrasena/:id", checkAuth, updateUserPassword);
+
+routePerfilUsuario.get("/progreso/:usuarioId", obtenerDesafioUsuario);
+routePerfilUsuario.put("/progreso/:usuarioId", actualizarDesafioUsuario);
 
 module.exports = routePerfilUsuario;
